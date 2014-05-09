@@ -10,66 +10,13 @@ PREFIX = "elasticsearch"
 ES_CLUSTER = "elasticsearch"
 ES_HOST = "localhost"
 ES_PORT = 9200
-ES_VERSION = "1.0"
+ES_VERSION = "1.1.0"
 ES_URL = ""
 VERBOSE_LOGGING = False
 
 Stat = collections.namedtuple('Stat', ('type', 'path'))
 
-STATS_CUR = {}
-
-# DICT: ElasticSearch 1.0.0
-STATS_ES1 = {
-    ## STORE
-    'indices.store.throttle-time': Stat("counter", "nodes.%s.indices.store.throttle_time_in_millis"),
-
-    ##SEARCH
-    'indices.search.open-contexts': Stat("gauge", "nodes.%s.indices.search.open_contexts"),
-
-    ##CACHE
-    'indices.cache.field.eviction': Stat("counter", "nodes.%s.indices.fielddata.evictions"),
-    'indices.cache.field.size': Stat("bytes", "nodes.%s.indices.fielddata.memory_size_in_bytes"),
-    'indices.cache.filter.evictions': Stat("counter", "nodes.%s.indices.filter_cache.evictions"),
-    'indices.cache.filter.size': Stat("bytes", "nodes.%s.indices.filter_cache.memory_size_in_bytes"),
-
-    ##GC
-    'jvm.gc.time': Stat("counter", "nodes.%s.jvm.gc.collectors.young.collection_time_in_millis"),
-    'jvm.gc.count': Stat("counter", "nodes.%s.jvm.gc.collectors.young.collection_count"),
-    'jvm.gc.old-time': Stat("counter", "nodes.%s.jvm.gc.collectors.old.collection_time_in_millis"),
-    'jvm.gc.old-count': Stat("counter", "nodes.%s.jvm.gc.collectors.old.collection_count"),
-
-    ## FLUSH
-    'indices.flush.total': Stat("counter", "nodes.%s.indices.flush.total"),
-    'indices.flush.time': Stat("counter", "nodes.%s.indices.flush.total_time_in_millis"),
-
-    ## MERGES
-    'indices.merges.current': Stat("gauge", "nodes.%s.indices.merges.current"),
-    'indices.merges.current-docs': Stat("gauge", "nodes.%s.indices.merges.current_docs"),
-    'indices.merges.current-size': Stat("bytes", "nodes.%s.indices.merges.current_size_in_bytes"),
-    'indices.merges.total': Stat("counter", "nodes.%s.indices.merges.total"),
-    'indices.merges.total-docs': Stat("gauge", "nodes.%s.indices.merges.total_docs"),
-    'indices.merges.total-size': Stat("bytes", "nodes.%s.indices.merges.total_size_in_bytes"),
-    'indices.merges.time': Stat("counter", "nodes.%s.indices.merges.total_time_in_millis"),
-
-    ## REFRESH
-    'indices.refresh.total': Stat("counter", "nodes.%s.indices.refresh.total"),
-    'indices.refresh.time': Stat("counter", "nodes.%s.indices.refresh.total_time_in_millis"),
-}
-
-# DICT: ElasticSearch 0.9.x
-STATS_ES09 = {
-
-    ##GC
-    'jvm.gc.time': Stat("counter", "nodes.%s.jvm.gc.collection_time_in_millis"),
-    'jvm.gc.count': Stat("counter", "nodes.%s.jvm.gc.collection_count"),
-
-    ##CPU
-    'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
-}
-
-# DICT: Common stuff
 STATS = {
-
     ## DOCS
     'indices.docs.count': Stat("gauge", "nodes.%s.indices.docs.count"),
     'indices.docs.deleted': Stat("counter", "nodes.%s.indices.docs.deleted"),
@@ -126,6 +73,41 @@ STATS = {
 
     # PROCESS METRICS #
     'process.open_file_descriptors': Stat("gauge", "nodes.%s.process.open_file_descriptors"),
+
+    ## STORE
+    'indices.store.throttle-time': Stat("counter", "nodes.%s.indices.store.throttle_time_in_millis"),
+
+    ##SEARCH
+    'indices.search.open-contexts': Stat("gauge", "nodes.%s.indices.search.open_contexts"),
+
+    ##CACHE
+    'indices.cache.field.eviction': Stat("counter", "nodes.%s.indices.fielddata.evictions"),
+    'indices.cache.field.size': Stat("bytes", "nodes.%s.indices.fielddata.memory_size_in_bytes"),
+    'indices.cache.filter.evictions': Stat("counter", "nodes.%s.indices.filter_cache.evictions"),
+    'indices.cache.filter.size': Stat("bytes", "nodes.%s.indices.filter_cache.memory_size_in_bytes"),
+
+    ##GC
+    'jvm.gc.time': Stat("counter", "nodes.%s.jvm.gc.collectors.young.collection_time_in_millis"),
+    'jvm.gc.count': Stat("counter", "nodes.%s.jvm.gc.collectors.young.collection_count"),
+    'jvm.gc.old-time': Stat("counter", "nodes.%s.jvm.gc.collectors.old.collection_time_in_millis"),
+    'jvm.gc.old-count': Stat("counter", "nodes.%s.jvm.gc.collectors.old.collection_count"),
+
+    ## FLUSH
+    'indices.flush.total': Stat("counter", "nodes.%s.indices.flush.total"),
+    'indices.flush.time': Stat("counter", "nodes.%s.indices.flush.total_time_in_millis"),
+
+    ## MERGES
+    'indices.merges.current': Stat("gauge", "nodes.%s.indices.merges.current"),
+    'indices.merges.current-docs': Stat("gauge", "nodes.%s.indices.merges.current_docs"),
+    'indices.merges.current-size': Stat("bytes", "nodes.%s.indices.merges.current_size_in_bytes"),
+    'indices.merges.total': Stat("counter", "nodes.%s.indices.merges.total"),
+    'indices.merges.total-docs': Stat("gauge", "nodes.%s.indices.merges.total_docs"),
+    'indices.merges.total-size': Stat("bytes", "nodes.%s.indices.merges.total_size_in_bytes"),
+    'indices.merges.time': Stat("counter", "nodes.%s.indices.merges.total_time_in_millis"),
+
+    ## REFRESH
+    'indices.refresh.total': Stat("counter", "nodes.%s.indices.refresh.total"),
+    'indices.refresh.time': Stat("counter", "nodes.%s.indices.refresh.total_time_in_millis"),
 }
 
 
@@ -133,7 +115,7 @@ STATS = {
 def lookup_stat(stat, json):
 
     node = json['nodes'].keys()[0]
-    val = dig_it_up(json, STATS_CUR[stat].path % node)
+    val = dig_it_up(json, STATS[stat].path % node)
 
     # Check to make sure we have a valid result
     # dig_it_up returns False if no match found
@@ -144,7 +126,7 @@ def lookup_stat(stat, json):
 
 def configure_callback(conf):
     """Received configuration information"""
-    global ES_HOST, ES_PORT, ES_URL, ES_VERSION, VERBOSE_LOGGING, STATS_CUR
+    global ES_HOST, ES_PORT, ES_URL, ES_VERSION, VERBOSE_LOGGING, STATS
     for node in conf.children:
         if node.key == 'Host':
             ES_HOST = node.values[0]
@@ -159,21 +141,17 @@ def configure_callback(conf):
         else:
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
-    if ES_VERSION == "1.0":
-        ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/stats/transport,http,process,jvm,indices,thread_pool"
-        STATS_CUR = dict(STATS.items() + STATS_ES1.items())
-    else:
-        ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_cluster/nodes/_local/stats?http=true&process=true&jvm=true&transport=true&thread_pool=true"
-        STATS_CUR = dict(STATS.items() + STATS_ES09.items())
+
+    ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/stats/transport,http,process,jvm,indices,thread_pool"
 
     # add threads; todo reorg
     for pool in ['generic', 'index', 'get', 'snapshot', 'merge', 'optimize', 'bulk', 'warmer', 'flush', 'search', 'refresh']:
       for attr in ['threads', 'queue', 'active', 'largest']:
         path = 'thread_pool.{0}.{1}'.format(pool, attr)
-        STATS_CUR[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
+        STATS[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
       for attr in ['completed', 'rejected']:
         path = 'thread_pool.{0}.{1}'.format(pool, attr)
-        STATS_CUR[path] = Stat("counter", 'nodes.%s.{0}'.format(path))
+        STATS[path] = Stat("counter", 'nodes.%s.{0}'.format(path))
 
     log_verbose('Configured with version=%s, host=%s, port=%s, url=%s' % (ES_VERSION, ES_HOST, ES_PORT, ES_URL))
 
@@ -192,7 +170,7 @@ def fetch_stats():
 
 def parse_stats(json):
     """Parse stats response from ElasticSearch"""
-    for name, key in STATS_CUR.iteritems():
+    for name, key in STATS.iteritems():
         result = lookup_stat(name, json)
         dispatch_stat(result, name, key)
 
