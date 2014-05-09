@@ -169,10 +169,10 @@ def configure_callback(conf):
     for pool in ['generic', 'index', 'get', 'snapshot', 'merge', 'optimize', 'bulk', 'warmer', 'flush', 'search', 'refresh']:
       for attr in ['threads', 'queue', 'active', 'largest']:
         path = 'thread_pool.{0}.{1}'.format(pool, attr)
-        STATS_CUR[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
+        STATS[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
       for attr in ['completed', 'rejected']:
         path = 'thread_pool.{0}.{1}'.format(pool, attr)
-        STATS_CUR[path] = Stat("counter", 'nodes.%s.{0}'.format(path))
+        STATS[path] = Stat("counter", 'nodes.%s.{0}'.format(path))
 
     log_verbose('Configured with version=%s, host=%s, port=%s, url=%s' % (ES_VERSION, ES_HOST, ES_PORT, ES_URL))
 
