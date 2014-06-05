@@ -157,7 +157,12 @@ def configure_callback(conf):
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
 
-    ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/stats/transport,http,process,jvm,indices,thread_pool"
+    if ES_VERSION == "1.0":
+        ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/_local/stats/transport,http,process,jvm,indices,thread_pool"
+        STATS_CUR = dict(STATS.items() + STATS_ES1.items())
+    else:
+        ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_cluster/nodes/_local/stats?http=true&process=true&jvm=true&transport=true&thread_pool=true"
+        STATS_CUR = dict(STATS.items() + STATS_ES09.items())
 
     # add threads; todo reorg
     for pool in ['generic', 'index', 'get', 'snapshot', 'merge', 'optimize', 'bulk', 'warmer', 'flush', 'search', 'refresh']:
