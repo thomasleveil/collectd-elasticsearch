@@ -187,7 +187,7 @@ def configure_callback(conf):
         ES_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/_local/stats/transport,http,process,jvm,indices,thread_pool"
         STATS_CUR = dict(STATS.items() + STATS_ES1.items())
 
-    # add threads; todo reorg
+    # add info on thread pools
     for pool in ['generic', 'index', 'get', 'snapshot', 'merge', 'optimize', 'bulk', 'warmer', 'flush', 'search', 'refresh']:
       for attr in ['threads', 'queue', 'active', 'largest']:
         path = 'thread_pool.{0}.{1}'.format(pool, attr)
