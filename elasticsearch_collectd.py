@@ -22,7 +22,7 @@ PREFIX = "elasticsearch"
 ES_CLUSTER = "elasticsearch"
 ES_HOST = "localhost"
 ES_PORT = 9200
-ES_VERSION = "1.0"
+ES_VERSION = None
 
 ENABLE_INDEX_STATS = True
 ENABLE_CLUSTER_STATS = True
@@ -41,7 +41,7 @@ INDEX_STATS_CUR = {}
 CLUSTER_STATS_CUR = {}
 
 # DICT: ElasticSearch 1.0.0
-NODE_STATS_ES1 = {
+NODE_STATS = {
     # STORE
     'indices.store.throttle-time': Stat("counter", "nodes.%s.indices.store.throttle_time_in_millis"),
 
@@ -80,21 +80,6 @@ NODE_STATS_ES1 = {
     # SEGMENTS
     'indices.segments.count': Stat("gauge", "nodes.%s.indices.segments.count"),
     'indices.segments.size': Stat("bytes", "nodes.%s.indices.segments.memory_in_bytes"),
-}
-
-# DICT: ElasticSearch 0.9.x
-NODE_STATS_ES09 = {
-
-    # GC
-    'jvm.gc.time': Stat("counter", "nodes.%s.jvm.gc.collection_time_in_millis"),
-    'jvm.gc.count': Stat("counter", "nodes.%s.jvm.gc.collection_count"),
-
-    # CPU
-    'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
-}
-
-# DICT: Common stuff
-NODE_STATS = {
 
     # DOCS
     'indices.docs.count': Stat("gauge", "nodes.%s.indices.docs.count"),
@@ -153,6 +138,7 @@ NODE_STATS = {
 
     # PROCESS METRICS #
     'process.open_file_descriptors': Stat("gauge", "nodes.%s.process.open_file_descriptors"),
+    'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
 }
 
 # ElasticSearch 1.3.0
@@ -163,7 +149,7 @@ INDEX_STATS_ES_1_3 = {
 }
 
 # ElasticSearch 1.1.0
-INDEX_STATS_ES1_1 = {
+INDEX_STATS_ES_1_1 = {
     # SUGGEST
     "indices[index={index_name}].primaries.suggest.total": Stat("counter", "primaries.suggest.total"),
     "indices[index={index_name}].primaries.suggest.time_in_millis": Stat("counter", "primaries.suggest.time_in_millis"),
@@ -171,7 +157,7 @@ INDEX_STATS_ES1_1 = {
 }
 
 # ElasticSearch 1.0.0
-INDEX_STATS_ES1_0 = {
+INDEX_STATS = {
     # TRANSLOG
     "indices[index={index_name}].primaries.translog.size_in_bytes": Stat("bytes", "primaries.translog.size_in_bytes"),
     "indices[index={index_name}].primaries.translog.operations": Stat("counter", "primaries.translog.operations"),
@@ -222,10 +208,7 @@ INDEX_STATS_ES1_0 = {
     # FILTER_CACHE
     "indices[index={index_name}].primaries.filter_cache.evictions": Stat("counter", "primaries.filter_cache.evictions"),
     "indices[index={index_name}].primaries.filter_cache.memory_size_in_bytes": Stat("bytes", "primaries.filter_cache.memory_size_in_bytes"),
-}
 
-# DICT: Common index stats (0.9 and later)
-INDEX_STATS = {
     # PRIMARIES
     # DOCS
     "indices[index={index_name}].primaries.docs.count": Stat("counter", "primaries.docs.count"),
@@ -294,20 +277,19 @@ INDEX_STATS = {
     "indices[index={index_name}].total.search.fetch_total": Stat("counter", "total.search.fetch_total"),
 }
 
-# ElasticSearch cluster stats (0.9.x and later)
+# ElasticSearch cluster stats (1.0.0 and later)
 CLUSTER_STATS = {
-    'cluster.active_primary_shards': Stat("gauge", "cluster.%s.active_primary_shards"),
-    'cluster.active_shards': Stat("gauge", "cluster.%s.active_shards"),
-    'cluster.initializing_shards': Stat("gauge", "cluster.%s.initializing_shards"),
-    'cluster.number_of_data_nodes': Stat("gauge", "cluster.%s.number_of_data_nodes"),
-    'cluster.number_of_nodes': Stat("gauge", "cluster.%s.number_of_nodes"),
-    'cluster.relocating_shards': Stat("gauge", "cluster.%s.relocating_shards"),
-    'cluster.unassigned_shards': Stat("gauge", "cluster.%s.unassigned_shards"),
+    'cluster.active_primary_shards': Stat("gauge", "active_primary_shards"),
+    'cluster.active_shards': Stat("gauge", "active_shards"),
+    'cluster.initializing_shards': Stat("gauge", "initializing_shards"),
+    'cluster.number_of_data_nodes': Stat("gauge", "number_of_data_nodes"),
+    'cluster.number_of_nodes': Stat("gauge", "number_of_nodes"),
+    'cluster.relocating_shards': Stat("gauge", "relocating_shards"),
+    'cluster.unassigned_shards': Stat("gauge", "unassigned_shards"),
 }
 
+
 # collectd callbacks
-
-
 def read_callback():
     """called by collectd to gather stats. It is called per collection interval.
     If this method throws, the plugin will be skipped for an increasing amount
@@ -330,6 +312,7 @@ def configure_callback(conf):
             ES_CLUSTER = node.values[0]
         elif node.key == 'Version':
             ES_VERSION = node.values[0]
+            collectd.info("overriding elasticsearch version number to %s" % ES_VERSION)
         elif node.key == 'Indexes':
             ES_INDEX = node.values
         elif node.key == 'EnableIndexStats':
@@ -340,6 +323,9 @@ def configure_callback(conf):
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
 
+    # determine current ES version
+    load_es_version()
+
     # intialize stats map based on ES version
     init_stats()
 
@@ -347,27 +333,16 @@ def configure_callback(conf):
 # helper methods
 def init_stats():
     global ES_HOST, ES_PORT, ES_NODE_URL, ES_CLUSTER_URL, ES_INDEX_URL, ES_VERSION, VERBOSE_LOGGING, NODE_STATS_CUR, INDEX_STATS_CUR, CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS
-    if ES_VERSION.startswith("0."):
-        # assume 0.9
-        ES_NODE_URL = "http://" + ES_HOST + ":" + \
-            str(ES_PORT) + "/_cluster/nodes/_local/stats?http=true&process=true&jvm=true&transport=true&thread_pool=true"
-        NODE_STATS_CUR = dict(NODE_STATS.items() + NODE_STATS_ES09.items())
-        INDEX_STATS_CUR = dict(INDEX_STATS)
+    ES_NODE_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + \
+        "/_nodes/_local/stats/transport,http,process,jvm,indices,thread_pool"
+    NODE_STATS_CUR = dict(NODE_STATS.items())
+    INDEX_STATS_CUR = dict(INDEX_STATS.items())
+    if ES_VERSION.startswith("1.1") or ES_VERSION.startswith("1.2"):
+        INDEX_STATS_CUR.update(INDEX_STATS_ES_1_1)
     else:
-        # 1.0 or higher
-        ES_NODE_URL = "http://" + ES_HOST + ":" + \
-            str(ES_PORT) + \
-            "/_nodes/_local/stats/transport,http,process,jvm,indices,thread_pool"
-        NODE_STATS_CUR = dict(NODE_STATS.items() + NODE_STATS_ES1.items())
-        if ES_VERSION.startswith("1.0"):
-            INDEX_STATS_CUR = INDEX_STATS
-        elif ES_VERSION.startswith("1.1") or ES_VERSION.startswith("1.2"):
-            INDEX_STATS_CUR = dict(
-                INDEX_STATS.items() + INDEX_STATS_ES1_0.items())
-        else:
-            # 1.3 and higher
-            INDEX_STATS_CUR = dict(
-                INDEX_STATS.items() + INDEX_STATS_ES1_0.items() + INDEX_STATS_ES_1_3.items())
+        # 1.3 and higher
+        INDEX_STATS_CUR.update(INDEX_STATS_ES_1_1)
+        INDEX_STATS_CUR.update(INDEX_STATS_ES_1_3)
 
     # version agnostic settings
     if not ES_INDEX:
@@ -440,6 +415,19 @@ def fetch_url(url):
     return result
 
 
+def load_es_version():
+    global ES_VERSION
+    if ES_VERSION is None:
+        json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT))
+        if json is None:
+            ES_VERSION = "1.0.0"
+            collectd.warning("elasticsearch plugin: unable to determine version, defaulting to %s" % ES_VERSION)
+        else:
+            ES_VERSION = json['version']['number']
+            collectd.info("elasticsearch plugin: elasticsearch version is %s" % ES_VERSION)
+
+    return ES_VERSION
+
 def parse_node_stats(json, stats):
     """Parse node stats response from ElasticSearch"""
     for name, key in stats.iteritems():
@@ -450,7 +438,7 @@ def parse_node_stats(json, stats):
 def parse_cluster_stats(json, stats):
     """Parse cluster stats response from ElasticSearch"""
     for name, key in stats.iteritems():
-        result = dig_it_up(json, name)
+        result = dig_it_up(json, key.path)
         dispatch_stat(result, name, key)
 
 
@@ -517,6 +505,13 @@ class CollectdMock(object):
     def __init__(self):
         self.value_mock = CollectdValuesMock
 
+    def info(self, msg):
+        print 'INFO: {}'.format(msg)
+
+    def warning(self, msg):
+        print 'WARN: {}'.format(msg)
+
+
     def error(self, msg):
         print 'ERROR: {}'.format(msg)
         sys.exit(1)
@@ -540,6 +535,7 @@ class CollectdValuesMock(object):
 if __name__ == '__main__':
     import sys
     collectd = CollectdMock()
+    load_es_version()
     init_stats()
     fetch_stats()
 else:
