@@ -40,6 +40,8 @@ NODE_STATS_CUR = {}
 INDEX_STATS_CUR = {}
 CLUSTER_STATS_CUR = {}
 
+CLUSTER_STATUS = {'green': 0, 'yellow': 1, 'red': 2}
+
 # DICT: ElasticSearch 1.0.0
 NODE_STATS = {
     # STORE
@@ -286,6 +288,7 @@ CLUSTER_STATS = {
     'cluster.number_of_nodes': Stat("gauge", "number_of_nodes"),
     'cluster.relocating_shards': Stat("gauge", "relocating_shards"),
     'cluster.unassigned_shards': Stat("gauge", "unassigned_shards"),
+    'cluster.status': Stat("gauge", "status"),
 }
 
 
@@ -437,6 +440,8 @@ def parse_node_stats(json, stats):
 
 def parse_cluster_stats(json, stats):
     """Parse cluster stats response from ElasticSearch"""
+    # convert the status color into a number
+    json['status'] = CLUSTER_STATUS[json['status']]
     for name, key in stats.iteritems():
         result = dig_it_up(json, key.path)
         dispatch_stat(result, name, key)
