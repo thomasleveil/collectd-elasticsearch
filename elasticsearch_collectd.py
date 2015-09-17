@@ -213,8 +213,8 @@ INDEX_STATS = {
 
     # PRIMARIES
     # DOCS
-    "indices[index={index_name}].primaries.docs.count": Stat("counter", "primaries.docs.count"),
-    "indices[index={index_name}].primaries.docs.deleted": Stat("counter", "primaries.docs.deleted"),
+    "indices[index={index_name}].primaries.docs.count": Stat("gauge", "primaries.docs.count"),
+    "indices[index={index_name}].primaries.docs.deleted": Stat("gauge", "primaries.docs.deleted"),
 
     # STORE
     "indices[index={index_name}].primaries.store.size_in_bytes": Stat("bytes", "primaries.store.size_in_bytes"),
