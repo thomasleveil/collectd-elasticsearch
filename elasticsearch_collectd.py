@@ -427,13 +427,17 @@ def fetch_stats():
 
 
 def fetch_url(url):
+    response = None
     try:
-        result = json.load(urllib2.urlopen(url, timeout=10))
+        response = urllib2.urlopen(url, timeout=10)
+        return json.load(response)
     except urllib2.URLError, e:
         collectd.error(
             'elasticsearch plugin: Error connecting to %s - %r' % (url, e))
         return None
-    return result
+    finally:
+        if response is not None:
+            response.close()
 
 
 def load_es_version():
