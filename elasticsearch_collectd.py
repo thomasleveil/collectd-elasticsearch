@@ -123,6 +123,9 @@ NODE_STATS = {
     'jvm.mem.non-heap-committed': Stat("gauge", "nodes.%s.jvm.mem.non_heap_committed_in_bytes"),
     'jvm.mem.non-heap-used': Stat("gauge", "nodes.%s.jvm.mem.non_heap_used_in_bytes"),
 
+    # UPTIME
+    'jvm.uptime': Stat("counter", "nodes.%s.jvm.uptime_in_millis"),
+
     # THREADS
     'jvm.threads.count': Stat("gauge", "nodes.%s.jvm.threads.count"),
     'jvm.threads.peak': Stat("gauge", "nodes.%s.jvm.threads.peak_count"),
