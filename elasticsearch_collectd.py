@@ -40,6 +40,8 @@ NODE_STATS_CUR = {}
 INDEX_STATS_CUR = {}
 CLUSTER_STATS_CUR = {}
 
+COLLECTION_INTERVAL = 10
+
 CLUSTER_STATUS = {'green': 0, 'yellow': 1, 'red': 2}
 
 # DICT: ElasticSearch 1.0.0
@@ -324,7 +326,8 @@ def read_callback():
 
 def configure_callback(conf):
     """called by collectd to configure the plugin. This is called only once"""
-    global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, VERBOSE_LOGGING, ES_CLUSTER, ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS
+    global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, VERBOSE_LOGGING, ES_CLUSTER,\
+        ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, COLLECTION_INTERVAL
     for node in conf.children:
         if node.key == 'Host':
             ES_HOST = node.values[0]
@@ -343,6 +346,8 @@ def configure_callback(conf):
             ENABLE_INDEX_STATS = bool(node.values[0])
         elif node.key == 'EnableClusterHealth':
             ENABLE_CLUSTER_STATS = bool(node.values[0])
+        elif node.key == 'Interval':
+            COLLECTION_INTERVAL = int(node.values[0])
         else:
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
@@ -353,6 +358,9 @@ def configure_callback(conf):
     # intialize stats map based on ES version
     init_stats()
 
+    # register the read callback now that we have the complete config
+    collectd.register_read(read_callback, interval=COLLECTION_INTERVAL)
+    collectd.info("started elasticsearch plugin with interval = %d seconds" % COLLECTION_INTERVAL)
 
 # helper methods
 def init_stats():
@@ -571,4 +579,3 @@ if __name__ == '__main__':
 else:
     import collectd
     collectd.register_config(configure_callback)
-    collectd.register_read(read_callback)
