@@ -571,9 +571,10 @@ def fetch_stats():
     global ES_CLUSTER
 
     node_json_stats = fetch_url(ES_NODE_URL)
-    ES_CLUSTER = node_json_stats['cluster_name']
-    log_verbose('Configured with cluster_json_stats=%s' % ES_CLUSTER)
-    parse_node_stats(node_json_stats, NODE_STATS_CUR)
+    if node_json_stats:
+        ES_CLUSTER = node_json_stats['cluster_name']
+        log_verbose('Configured with cluster_json_stats=%s' % ES_CLUSTER)
+        parse_node_stats(node_json_stats, NODE_STATS_CUR)
 
     if ENABLE_CLUSTER_STATS:
         cluster_json_stats = fetch_url(ES_CLUSTER_URL)
