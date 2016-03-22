@@ -432,9 +432,11 @@ def fetch_stats():
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
     if ENABLE_INDEX_STATS:
-        indexes_json_stats = fetch_url(ES_INDEX_URL)['indices']
-        for index_name in indexes_json_stats.keys():
-            parse_index_stats(indexes_json_stats[index_name], index_name)
+        indicies = fetch_url(ES_INDEX_URL)
+        if indicies:
+            indexes_json_stats = indicies['indices']
+            for index_name in indexes_json_stats.keys():
+                parse_index_stats(indexes_json_stats[index_name], index_name)
 
 
 def fetch_url(url):
