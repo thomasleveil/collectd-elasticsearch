@@ -192,6 +192,21 @@ NODE_STATS = {
     'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
 }
 
+NODE_STATS_ES_2 = {
+    'indices.cache.filter.evictions':
+            Stat("counter", "nodes.%s.indices.query_cache.evictions"),
+    'indices.cache.filter.size':
+        Stat("gauge", "nodes.%s.indices.query_cache.cache_size"),
+    'indices.cache.filter.hit-count':
+            Stat("gauge", "nodes.%s.indices.query_cache.hit_count"),
+    'indices.cache.filter.miss-count':
+            Stat("gauge", "nodes.%s.indices.query_cache.miss_count"),
+    'indices.cache.filter.cache-count':
+            Stat("gauge", "nodes.%s.indices.query_cache.cache_count"),
+    'indices.cache.filter.total-count':
+            Stat("gauge", "nodes.%s.indices.query_cache.total_count"),
+}
+
 # ElasticSearch 1.3.0
 INDEX_STATS_ES_1_3 = {
     # SEGMENTS
@@ -517,6 +532,9 @@ def init_stats():
                   "thread_pool"
     NODE_STATS_CUR = dict(NODE_STATS.items())
     INDEX_STATS_CUR = dict(INDEX_STATS.items())
+    if ES_VERSION.startswith("2."):
+        NODE_STATS_CUR.update(NODE_STATS_ES_2)
+
     if ES_VERSION.startswith("1.1") or ES_VERSION.startswith("1.2"):
         INDEX_STATS_CUR.update(INDEX_STATS_ES_1_1)
     else:
@@ -532,10 +550,17 @@ def init_stats():
     else:
         ES_INDEX_URL = "http://" + ES_HOST + ":" + \
                        str(ES_PORT) + "/" + ",".join(ES_INDEX) + "/_stats"
+    #common thread pools for all ES versions
+    thread_pools = ['generic', 'index', 'get', 'snapshot', 'bulk', 'warmer', 'flush', 'search', 'refresh']
+
+    if ES_VERSION.startswith("2."):
+        thread_pools.extend(['suggest', 'percolate', 'management', 'listener', 'force_merge',
+                    'fetch_shard_store', 'fetch_shard_started'])
+    else:
+        thread_pools.extend(['merge', 'optimize'])
 
     # add info on thread pools (applicable for all versions)
-    for pool in ['generic', 'index', 'get', 'snapshot', 'merge', 'optimize',
-                 'bulk', 'warmer', 'flush', 'search', 'refresh']:
+    for pool in thread_pools:
         for attr in ['threads', 'queue', 'active', 'largest']:
             path = 'thread_pool.{0}.{1}'.format(pool, attr)
             NODE_STATS_CUR[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
