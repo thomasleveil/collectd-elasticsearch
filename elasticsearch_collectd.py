@@ -688,14 +688,14 @@ def dispatch_stat(result, name, key):
         return
     estype = key.type
     value = int(result)
+    log_verbose('Sending value[%s]: %s=%s' % (estype, name, value))
 
     val = collectd.Values(plugin='elasticsearch')
-    val.plugin_instance = "[es_cluster=%s,es_version=%s]" % (ES_CLUSTER, ES_VERSION)
+    val.plugin_instance = ES_CLUSTER
     val.type = estype
     val.type_instance = name
     val.values = [value]
     val.meta = {'0': True}
-    log_verbose('Sending value[%s]: %s=%s with dimensions %s' % (estype, name, value, val.plugin_instance))
     val.dispatch()
 
 
