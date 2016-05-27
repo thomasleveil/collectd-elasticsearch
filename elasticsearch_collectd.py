@@ -104,6 +104,10 @@ NODE_STATS = {
     'indices.segments.count': Stat("gauge", "nodes.%s.indices.segments.count"),
     'indices.segments.size': Stat("gauge",
                                   "nodes.%s.indices.segments.memory_in_bytes"),
+    'indices.segments.index-writer-max-size': Stat("gauge",
+                                                   "nodes.%s.indices.segments.index_writer_max_memory_in_bytes"),
+    'indices.segments.index-writer-size': Stat("gauge",
+                                               "nodes.%s.indices.segments.index_writer_memory_in_bytes"),
 
     # DOCS
     'indices.docs.count': Stat("gauge", "nodes.%s.indices.docs.count"),
