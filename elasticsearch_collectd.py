@@ -169,6 +169,14 @@ NODE_STATS = {
         Stat("gauge", "nodes.%s.jvm.mem.non_heap_committed_in_bytes"),
     'jvm.mem.non-heap-used': Stat("gauge",
                                   "nodes.%s.jvm.mem.non_heap_used_in_bytes"),
+    'jvm.mem.pools.young.max_in_bytes': Stat("gauge",
+                                  "nodes.%s.jvm.mem.pools.young.max_in_bytes"),
+    'jvm.mem.pools.young.used_in_bytes': Stat("gauge",
+                                  "nodes.%s.jvm.mem.pools.young.used_in_bytes"),
+    'jvm.mem.pools.old.max_in_bytes': Stat("gauge",
+                                  "nodes.%s.jvm.mem.pools.old.max_in_bytes"),
+    'jvm.mem.pools.old.used_in_bytes': Stat("gauge",
+                                  "nodes.%s.jvm.mem.pools.old.used_in_bytes"),
 
     # UPTIME
     'jvm.uptime': Stat("counter", "nodes.%s.jvm.uptime_in_millis"),
