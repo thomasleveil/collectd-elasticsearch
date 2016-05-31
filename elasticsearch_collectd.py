@@ -202,6 +202,7 @@ NODE_STATS = {
     'process.open_file_descriptors':
         Stat("gauge", "nodes.%s.process.open_file_descriptors"),
     'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
+    'process.mem.share_in_bytes': Stat("gauge", "nodes.%s.process.mem.share_in_bytes"),
 }
 
 # ElasticSearch 1.3.0
