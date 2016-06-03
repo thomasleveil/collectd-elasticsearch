@@ -1,6 +1,6 @@
-# ElasticSearch CollectD plugin
+# Elasticsearch CollectD plugin
 
-A [CollectD](http://collectd.org) plugin to collect [ElasticSearch](http://elasticsearch.org) stats and metrics. Uses CollectD's [Python plugin](http://collectd.org/documentation/manpages/collectd-python.5.shtml).
+A [CollectD](http://collectd.org) plugin to collect [Elasticsearch](http://elasticsearch.org) stats and metrics. Uses CollectD's [Python plugin](http://collectd.org/documentation/manpages/collectd-python.5.shtml).
 
 ## Installation
 
@@ -11,13 +11,22 @@ A [CollectD](http://collectd.org) plugin to collect [ElasticSearch](http://elast
 ### Requirements
 
  * collectd 4.9+
- * ElasticSearch 1.x or newer.
+ * Elasticsearch 1.x or newer.
 
 ## Configuration
 
- * See [`elasticsearch.conf`](elasticsearch.conf)
- * The plugin will automatically determine the version of ElasticSearch you are running.
+ * See [`elasticsearch.conf`](https://github.com/signalfx/integrations/blob/master/collectd-elasticsearch/20-elasticsearch.conf)
+ * The plugin will automatically determine the version of Elasticsearch you are running.
  * Per-index and cluster stats can be disabled if needed; they are enabled by default.
+ * If you are running the Elasticsearch plugin via a collectd deployment within a container, please configure the Host and Port values inside of the 20-elasticsearch.conf file that correspond to the desired Elasticsearch instance.
+ 
+ ex:
+```
+   <Module "elasticsearch_collectd">
+       Host "XXX.XXX.XXX.XXX"
+       Port "XXXX"
+   </Module>
+```
 
 ## Metrics
 
