@@ -211,13 +211,13 @@ NODE_STATS_ES_2 = {
     'indices.cache.filter.size':
         Stat("gauge", "nodes.%s.indices.query_cache.cache_size"),
     'indices.cache.filter.hit-count':
-            Stat("gauge", "nodes.%s.indices.query_cache.hit_count"),
+            Stat("counter", "nodes.%s.indices.query_cache.hit_count"),
     'indices.cache.filter.miss-count':
-            Stat("gauge", "nodes.%s.indices.query_cache.miss_count"),
+            Stat("counter", "nodes.%s.indices.query_cache.miss_count"),
     'indices.cache.filter.cache-count':
-            Stat("gauge", "nodes.%s.indices.query_cache.cache_count"),
+            Stat("counter", "nodes.%s.indices.query_cache.cache_count"),
     'indices.cache.filter.total-count':
-            Stat("gauge", "nodes.%s.indices.query_cache.total_count"),
+            Stat("counter", "nodes.%s.indices.query_cache.total_count"),
 }
 
 # ElasticSearch 1.3.0
