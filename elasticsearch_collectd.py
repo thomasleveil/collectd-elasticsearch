@@ -820,5 +820,4 @@ if __name__ == '__main__':
     fetch_stats()
 else:
     import collectd
-
     collectd.register_config(configure_callback)
