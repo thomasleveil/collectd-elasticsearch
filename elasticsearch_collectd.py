@@ -78,41 +78,50 @@ NODE_STATS = {
         Stat("counter", "nodes.%s.jvm.gc.collectors.old.collection_count"),
 
     # FLUSH
-    'indices.flush.total': Stat("counter", "nodes.%s.indices.flush.total"),
+    'indices.flush.total':
+        Stat("counter", "nodes.%s.indices.flush.total"),
     'indices.flush.time':
         Stat("counter", "nodes.%s.indices.flush.total_time_in_millis"),
 
     # MERGES
-    'indices.merges.current': Stat("gauge", "nodes.%s.indices.merges.current"),
+    'indices.merges.current':
+        Stat("gauge", "nodes.%s.indices.merges.current"),
     'indices.merges.current-docs':
         Stat("gauge", "nodes.%s.indices.merges.current_docs"),
     'indices.merges.current-size':
         Stat("gauge", "nodes.%s.indices.merges.current_size_in_bytes"),
-    'indices.merges.total': Stat("counter", "nodes.%s.indices.merges.total"),
-    'indices.merges.total-docs': Stat("gauge",
-                                      "nodes.%s.indices.merges.total_docs"),
+    'indices.merges.total':
+        Stat("counter", "nodes.%s.indices.merges.total"),
+    'indices.merges.total-docs':
+        Stat("gauge", "nodes.%s.indices.merges.total_docs"),
     'indices.merges.total-size':
         Stat("counter", "nodes.%s.indices.merges.total_size_in_bytes"),
     'indices.merges.time':
         Stat("counter", "nodes.%s.indices.merges.total_time_in_millis"),
 
     # REFRESH
-    'indices.refresh.total': Stat("counter", "nodes.%s.indices.refresh.total"),
+    'indices.refresh.total':
+        Stat("counter", "nodes.%s.indices.refresh.total"),
     'indices.refresh.time':
         Stat("counter", "nodes.%s.indices.refresh.total_time_in_millis"),
 
     # SEGMENTS
-    'indices.segments.count': Stat("gauge", "nodes.%s.indices.segments.count"),
-    'indices.segments.size': Stat("gauge",
-                                  "nodes.%s.indices.segments.memory_in_bytes"),
-    'indices.segments.index-writer-max-size': Stat("gauge",
-                                                   "nodes.%s.indices.segments.index_writer_max_memory_in_bytes"),
-    'indices.segments.index-writer-size': Stat("gauge",
-                                               "nodes.%s.indices.segments.index_writer_memory_in_bytes"),
+    'indices.segments.count':
+        Stat("gauge", "nodes.%s.indices.segments.count"),
+    'indices.segments.size':
+        Stat("gauge", "nodes.%s.indices.segments.memory_in_bytes"),
+    'indices.segments.index-writer-max-size':
+        Stat("gauge",
+             "nodes.%s.indices.segments.index_writer_max_memory_in_bytes"),
+    'indices.segments.index-writer-size':
+        Stat("gauge",
+             "nodes.%s.indices.segments.index_writer_memory_in_bytes"),
 
     # DOCS
-    'indices.docs.count': Stat("gauge", "nodes.%s.indices.docs.count"),
-    'indices.docs.deleted': Stat("gauge", "nodes.%s.indices.docs.deleted"),
+    'indices.docs.count':
+        Stat("gauge", "nodes.%s.indices.docs.count"),
+    'indices.docs.deleted':
+        Stat("gauge", "nodes.%s.indices.docs.deleted"),
 
     # STORE
     'indices.store.size':
@@ -133,92 +142,106 @@ NODE_STATS = {
         Stat("gauge", "nodes.%s.indices.indexing.delete_current"),
 
     # GET
-    'indices.get.total': Stat("counter", "nodes.%s.indices.get.total"),
-    'indices.get.time': Stat("counter", "nodes.%s.indices.get.time_in_millis"),
-    'indices.get.exists-total': Stat("counter",
-                                     "nodes.%s.indices.get.exists_total"),
+    'indices.get.total':
+        Stat("counter", "nodes.%s.indices.get.total"),
+    'indices.get.time':
+        Stat("counter", "nodes.%s.indices.get.time_in_millis"),
+    'indices.get.exists-total':
+        Stat("counter", "nodes.%s.indices.get.exists_total"),
     'indices.get.exists-time':
         Stat("counter", "nodes.%s.indices.get.exists_time_in_millis"),
-    'indices.get.missing-total': Stat("counter",
-                                      "nodes.%s.indices.get.missing_total"),
+    'indices.get.missing-total':
+        Stat("counter", "nodes.%s.indices.get.missing_total"),
     'indices.get.missing-time':
         Stat("counter", "nodes.%s.indices.get.missing_time_in_millis"),
-    'indices.get.current': Stat("gauge", "nodes.%s.indices.get.current"),
+    'indices.get.current':
+        Stat("gauge", "nodes.%s.indices.get.current"),
 
     # SEARCH
     'indices.search.query-current':
         Stat("gauge", "nodes.%s.indices.search.query_current"),
-    'indices.search.query-total': Stat("counter",
-                                       "nodes.%s.indices.search.query_total"),
+    'indices.search.query-total':
+        Stat("counter", "nodes.%s.indices.search.query_total"),
     'indices.search.query-time':
         Stat("counter", "nodes.%s.indices.search.query_time_in_millis"),
     'indices.search.fetch-current':
         Stat("gauge", "nodes.%s.indices.search.fetch_current"),
-    'indices.search.fetch-total': Stat("counter",
-                                       "nodes.%s.indices.search.fetch_total"),
+    'indices.search.fetch-total':
+        Stat("counter", "nodes.%s.indices.search.fetch_total"),
     'indices.search.fetch-time':
         Stat("counter", "nodes.%s.indices.search.fetch_time_in_millis"),
 
     # JVM METRICS #
     # MEM
-    'jvm.mem.heap-committed': Stat("gauge",
-                                   "nodes.%s.jvm.mem.heap_committed_in_bytes"),
-    'jvm.mem.heap-used': Stat("gauge", "nodes.%s.jvm.mem.heap_used_in_bytes"),
-    'jvm.mem.heap-used-percent': Stat("percent",
-                                      "nodes.%s.jvm.mem.heap_used_percent"),
+    'jvm.mem.heap-committed':
+        Stat("gauge", "nodes.%s.jvm.mem.heap_committed_in_bytes"),
+    'jvm.mem.heap-used':
+        Stat("gauge", "nodes.%s.jvm.mem.heap_used_in_bytes"),
+    'jvm.mem.heap-used-percent':
+        Stat("percent", "nodes.%s.jvm.mem.heap_used_percent"),
     'jvm.mem.non-heap-committed':
         Stat("gauge", "nodes.%s.jvm.mem.non_heap_committed_in_bytes"),
-    'jvm.mem.non-heap-used': Stat("gauge",
-                                  "nodes.%s.jvm.mem.non_heap_used_in_bytes"),
-    'jvm.mem.pools.young.max_in_bytes': Stat("gauge",
-                                  "nodes.%s.jvm.mem.pools.young.max_in_bytes"),
-    'jvm.mem.pools.young.used_in_bytes': Stat("gauge",
-                                  "nodes.%s.jvm.mem.pools.young.used_in_bytes"),
-    'jvm.mem.pools.old.max_in_bytes': Stat("gauge",
-                                  "nodes.%s.jvm.mem.pools.old.max_in_bytes"),
-    'jvm.mem.pools.old.used_in_bytes': Stat("gauge",
-                                  "nodes.%s.jvm.mem.pools.old.used_in_bytes"),
+    'jvm.mem.non-heap-used':
+        Stat("gauge", "nodes.%s.jvm.mem.non_heap_used_in_bytes"),
+    'jvm.mem.pools.young.max_in_bytes':
+        Stat("gauge", "nodes.%s.jvm.mem.pools.young.max_in_bytes"),
+    'jvm.mem.pools.young.used_in_bytes':
+        Stat("gauge", "nodes.%s.jvm.mem.pools.young.used_in_bytes"),
+    'jvm.mem.pools.old.max_in_bytes':
+        Stat("gauge", "nodes.%s.jvm.mem.pools.old.max_in_bytes"),
+    'jvm.mem.pools.old.used_in_bytes':
+        Stat("gauge", "nodes.%s.jvm.mem.pools.old.used_in_bytes"),
 
     # UPTIME
-    'jvm.uptime': Stat("counter", "nodes.%s.jvm.uptime_in_millis"),
+    'jvm.uptime':
+        Stat("counter", "nodes.%s.jvm.uptime_in_millis"),
 
     # THREADS
-    'jvm.threads.count': Stat("gauge", "nodes.%s.jvm.threads.count"),
-    'jvm.threads.peak': Stat("gauge", "nodes.%s.jvm.threads.peak_count"),
+    'jvm.threads.count':
+        Stat("gauge", "nodes.%s.jvm.threads.count"),
+    'jvm.threads.peak':
+        Stat("gauge", "nodes.%s.jvm.threads.peak_count"),
 
     # TRANSPORT METRICS #
-    'transport.server_open': Stat("gauge", "nodes.%s.transport.server_open"),
-    'transport.rx.count': Stat("counter", "nodes.%s.transport.rx_count"),
+    'transport.server_open':
+        Stat("gauge", "nodes.%s.transport.server_open"),
+    'transport.rx.count':
+        Stat("counter", "nodes.%s.transport.rx_count"),
     'transport.rx.size':
         Stat("counter", "nodes.%s.transport.rx_size_in_bytes"),
-    'transport.tx.count': Stat("counter", "nodes.%s.transport.tx_count"),
+    'transport.tx.count':
+        Stat("counter", "nodes.%s.transport.tx_count"),
     'transport.tx.size':
         Stat("counter", "nodes.%s.transport.tx_size_in_bytes"),
 
     # HTTP METRICS #
-    'http.current_open': Stat("gauge", "nodes.%s.http.current_open"),
-    'http.total_open': Stat("counter", "nodes.%s.http.total_opened"),
+    'http.current_open':
+        Stat("gauge", "nodes.%s.http.current_open"),
+    'http.total_open':
+        Stat("counter", "nodes.%s.http.total_opened"),
 
     # PROCESS METRICS #
     'process.open_file_descriptors':
         Stat("gauge", "nodes.%s.process.open_file_descriptors"),
-    'process.cpu.percent': Stat("gauge", "nodes.%s.process.cpu.percent"),
-    'process.mem.share_in_bytes': Stat("gauge", "nodes.%s.process.mem.share_in_bytes"),
+    'process.cpu.percent':
+        Stat("gauge", "nodes.%s.process.cpu.percent"),
+    'process.mem.share_in_bytes':
+        Stat("gauge", "nodes.%s.process.mem.share_in_bytes"),
 }
 
 NODE_STATS_ES_2 = {
     'indices.cache.filter.evictions':
-            Stat("counter", "nodes.%s.indices.query_cache.evictions"),
+        Stat("counter", "nodes.%s.indices.query_cache.evictions"),
     'indices.cache.filter.size':
         Stat("gauge", "nodes.%s.indices.query_cache.cache_size"),
     'indices.cache.filter.hit-count':
-            Stat("counter", "nodes.%s.indices.query_cache.hit_count"),
+        Stat("counter", "nodes.%s.indices.query_cache.hit_count"),
     'indices.cache.filter.miss-count':
-            Stat("counter", "nodes.%s.indices.query_cache.miss_count"),
+        Stat("counter", "nodes.%s.indices.query_cache.miss_count"),
     'indices.cache.filter.cache-count':
-            Stat("counter", "nodes.%s.indices.query_cache.cache_count"),
+        Stat("counter", "nodes.%s.indices.query_cache.cache_count"),
     'indices.cache.filter.total-count':
-            Stat("counter", "nodes.%s.indices.query_cache.total_count"),
+        Stat("counter", "nodes.%s.indices.query_cache.total_count"),
 }
 
 # ElasticSearch 1.3.0
@@ -322,10 +345,10 @@ INDEX_STATS = {
         Stat("gauge", "primaries.percolate.current"),
 
     # FILTER_CACHE
-    "indices[index={index_name}].primaries.filter-cache.evictions": Stat(
-        "counter", "primaries.filter_cache.evictions"),
-    "indices[index={index_name}].primaries.filter-cache.memory-size": Stat(
-        "gauge", "primaries.filter_cache.memory_size_in_bytes"),
+    "indices[index={index_name}].primaries.filter-cache.evictions":
+        Stat("counter", "primaries.filter_cache.evictions"),
+    "indices[index={index_name}].primaries.filter-cache.memory-size":
+        Stat("gauge", "primaries.filter_cache.memory_size_in_bytes"),
 
     # DOCS
     "indices[index={index_name}].primaries.docs.count":
@@ -336,24 +359,22 @@ INDEX_STATS = {
     # STORE
     "indices[index={index_name}].primaries.store.size":
         Stat("gauge", "primaries.store.size_in_bytes"),
-    "indices[index={index_name}].primaries.store.throttle-time": Stat(
-        "counter",
-        "primaries.store.throttle_time_in_millis"),
+    "indices[index={index_name}].primaries.store.throttle-time":
+        Stat("counter", "primaries.store.throttle_time_in_millis"),
 
     # INDEXING
-    "indices[index={index_name}].primaries.indexing.index-total": Stat(
-        "counter", "primaries.indexing.index_total"),
-    "indices[index={index_name}].primaries.indexing.index-time": Stat(
-        "counter",
-        "primaries.indexing.index_time_in_millis"),
-    "indices[index={index_name}].primaries.indexing.index-current": Stat(
-        "gauge", "primaries.indexing.index_current"),
-    "indices[index={index_name}].primaries.indexing.delete-total": Stat(
-        "counter", "primaries.indexing.delete_total"),
-    "indices[index={index_name}].primaries.indexing.delete-time": Stat(
-        "counter", "primaries.indexing.delete_time_in_millis"),
-    "indices[index={index_name}].primaries.indexing.delete-current": Stat(
-        "gauge", "primaries.indexing.delete_current"),
+    "indices[index={index_name}].primaries.indexing.index-total":
+        Stat("counter", "primaries.indexing.index_total"),
+    "indices[index={index_name}].primaries.indexing.index-time":
+        Stat("counter", "primaries.indexing.index_time_in_millis"),
+    "indices[index={index_name}].primaries.indexing.index-current":
+        Stat("gauge", "primaries.indexing.index_current"),
+    "indices[index={index_name}].primaries.indexing.delete-total":
+        Stat("counter", "primaries.indexing.delete_total"),
+    "indices[index={index_name}].primaries.indexing.delete-time":
+        Stat("counter", "primaries.indexing.delete_time_in_millis"),
+    "indices[index={index_name}].primaries.indexing.delete-current":
+        Stat("gauge", "primaries.indexing.delete_current"),
 
     # GET
     "indices[index={index_name}].primaries.get.time":
@@ -387,8 +408,8 @@ INDEX_STATS = {
 
     # TOTAL #
     # DOCS
-    "indices[index={index_name}].total.docs.count": Stat("gauge",
-                                                         "total.docs.count"),
+    "indices[index={index_name}].total.docs.count":
+        Stat("gauge", "total.docs.count"),
     "indices[index={index_name}].total.docs.deleted":
         Stat("gauge", "total.docs.deleted"),
 
@@ -413,8 +434,8 @@ INDEX_STATS = {
         Stat("gauge", "total.indexing.delete_current"),
 
     # GET
-    "indices[index={index_name}].total.get.total": Stat("counter",
-                                                        "total.get.total"),
+    "indices[index={index_name}].total.get.total":
+        Stat("counter", "total.get.total"),
     "indices[index={index_name}].total.get.time":
         Stat("counter", "total.get.time_in_millis"),
     "indices[index={index_name}].total.get.exists-total":
@@ -425,8 +446,8 @@ INDEX_STATS = {
         Stat("counter", "total.get.missing_total"),
     "indices[index={index_name}].total.get.missing-time":
         Stat("counter", "total.get.missing_time_in_millis"),
-    "indices[index={index_name}].total.get.current": Stat("gauge",
-                                                          "total.get.current"),
+    "indices[index={index_name}].total.get.current":
+        Stat("gauge", "total.get.current"),
 
     # SEARCH
     "indices[index={index_name}].total.search.open-contexts":
@@ -566,12 +587,14 @@ def init_stats():
     else:
         ES_INDEX_URL = "http://" + ES_HOST + ":" + \
                        str(ES_PORT) + "/" + ",".join(ES_INDEX) + "/_stats"
-    #common thread pools for all ES versions
-    thread_pools = ['generic', 'index', 'get', 'snapshot', 'bulk', 'warmer', 'flush', 'search', 'refresh']
+    # common thread pools for all ES versions
+    thread_pools = ['generic', 'index', 'get', 'snapshot', 'bulk', 'warmer',
+                    'flush', 'search', 'refresh']
 
     if ES_VERSION.startswith("2."):
-        thread_pools.extend(['suggest', 'percolate', 'management', 'listener', 'force_merge',
-                    'fetch_shard_store', 'fetch_shard_started'])
+        thread_pools.extend(['suggest', 'percolate', 'management', 'listener',
+                             'force_merge', 'fetch_shard_store',
+                             'fetch_shard_started'])
     else:
         thread_pools.extend(['merge', 'optimize'])
 
@@ -648,14 +671,16 @@ def fetch_url(url):
 def load_es_info():
     global ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE
 
-    json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/_local")
+    json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) +
+                     "/_nodes/_local")
     if json is None:
         # assume some sane defaults
         ES_VERSION = "1.0.0"
         ES_CLUSTER = "elasticsearch"
         ES_MASTER_ELIGIBLE = True
-        collectd.warning("elasticsearch plugin: unable to determine node information, \
-defaulting to version %s, cluster %s and master %s" % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+        collectd.warning("elasticsearch plugin: unable to determine node \
+information, defaulting to version %s, cluster %s and master %s" %
+                         (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
         return
 
     cluster_name = json['cluster_name']
@@ -664,7 +689,8 @@ defaulting to version %s, cluster %s and master %s" % (ES_VERSION, ES_CLUSTER, E
     version = node_info['version']
     # a node is master eligible by default unless it's configured otherwise
     master_eligible = True
-    if 'node' in node_info['settings'] and 'master' in node_info['settings']['node']:
+    if 'node' in node_info['settings'] and \
+       'master' in node_info['settings']['node']:
         master_eligible = node_info['settings']['node']['master'] == 'true'
 
     # update global settings
@@ -674,8 +700,10 @@ defaulting to version %s, cluster %s and master %s" % (ES_VERSION, ES_CLUSTER, E
     if ES_CLUSTER is None:
         ES_CLUSTER = cluster_name
 
-    collectd.info("elasticsearch plugin: version: %s, cluster: %s, master eligible: %s"
-        % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+    collectd.info("elasticsearch plugin: version: %s, cluster: %s, master \
+eligible: %s"
+                  % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+
 
 def parse_node_stats(json, stats):
     """Parse node stats response from ElasticSearch"""
