@@ -19,10 +19,11 @@ import json
 import urllib2
 
 PREFIX = "elasticsearch"
-ES_CLUSTER = "elasticsearch"
 ES_HOST = "localhost"
 ES_PORT = 9200
+ES_CLUSTER = None
 ES_VERSION = None
+ES_MASTER_ELIGIBLE = None
 
 ENABLE_INDEX_STATS = True
 ENABLE_CLUSTER_STATS = True
@@ -506,6 +507,8 @@ def configure_callback(conf):
             VERBOSE_LOGGING = bool(node.values[0])
         elif node.key == 'Cluster':
             ES_CLUSTER = node.values[0]
+            collectd.info(
+                "overriding elasticsearch cluster name to %s" % ES_CLUSTER)
         elif node.key == 'Version':
             ES_VERSION = node.values[0]
             collectd.info(
@@ -522,8 +525,8 @@ def configure_callback(conf):
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
 
-    # determine current ES version
-    load_es_version()
+    # determine node information
+    load_es_info()
 
     # intialize stats map based on ES version
     init_stats()
@@ -614,14 +617,16 @@ def fetch_stats():
         log_verbose('Configured with cluster_json_stats=%s' % ES_CLUSTER)
         parse_node_stats(node_json_stats, NODE_STATS_CUR)
 
-    if ENABLE_CLUSTER_STATS:
+    # load cluster and index stats only on master eligible nodes, this
+    # avoids collecting too many metrics if the cluster has a lot of nodes
+    if ENABLE_CLUSTER_STATS and ES_MASTER_ELIGIBLE:
         cluster_json_stats = fetch_url(ES_CLUSTER_URL)
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
-    if ENABLE_INDEX_STATS:
-        indicies = fetch_url(ES_INDEX_URL)
-        if indicies:
-            indexes_json_stats = indicies['indices']
+    if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE:
+        indices = fetch_url(ES_INDEX_URL)
+        if indices:
+            indexes_json_stats = indices['indices']
             for index_name in indexes_json_stats.keys():
                 parse_index_stats(indexes_json_stats[index_name], index_name)
 
@@ -640,22 +645,37 @@ def fetch_url(url):
             response.close()
 
 
-def load_es_version():
-    global ES_VERSION
+def load_es_info():
+    global ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE
+
+    json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) + "/_nodes/_local")
+    if json is None:
+        # assume some sane defaults
+        ES_VERSION = "1.0.0"
+        ES_CLUSTER = "elasticsearch"
+        ES_MASTER_ELIGIBLE = True
+        collectd.warning("elasticsearch plugin: unable to determine node information, \
+defaulting to version %s, cluster %s and master %s" % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+        return
+
+    cluster_name = json['cluster_name']
+    # we should have only one entry with the current node information
+    node_info = json['nodes'].itervalues().next()
+    version = node_info['version']
+    # a node is master eligible by default unless it's configured otherwise
+    master_eligible = True
+    if 'node' in node_info['settings'] and 'master' in node_info['settings']['node']:
+        master_eligible = node_info['settings']['node']['master'] == 'true'
+
+    # update global settings
+    ES_MASTER_ELIGIBLE = master_eligible
     if ES_VERSION is None:
-        json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT))
-        if json is None:
-            ES_VERSION = "1.0.0"
-            collectd.warning("elasticsearch plugin: unable to determine " +
-                             "version, defaulting to %s" % ES_VERSION)
-        else:
-            ES_VERSION = json['version']['number']
-            collectd.info(
-                "elasticsearch plugin: elasticsearch version is %s" %
-                ES_VERSION)
+        ES_VERSION = version
+    if ES_CLUSTER is None:
+        ES_CLUSTER = cluster_name
 
-    return ES_VERSION
-
+    collectd.info("elasticsearch plugin: version: %s, cluster: %s, master eligible: %s"
+        % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
 
 def parse_node_stats(json, stats):
     """Parse node stats response from ElasticSearch"""
@@ -763,9 +783,11 @@ class CollectdValuesMock(object):
 
 if __name__ == '__main__':
     import sys
-
+    # allow user to override ES host name for easier testing
+    if len(sys.argv) > 1:
+        ES_HOST = sys.argv[1]
     collectd = CollectdMock()
-    load_es_version()
+    load_es_info()
     init_stats()
     fetch_stats()
 else:
