@@ -46,7 +46,66 @@ CLUSTER_STATS_CUR = {}
 
 COLLECTION_INTERVAL = 10
 
+INDEX_INTERVAL = 300
+
+INDEX_SKIP = 0
+
+SKIP_COUNT = 0
+
 CLUSTER_STATUS = {'green': 0, 'yellow': 1, 'red': 2}
+
+DETAILED_METRICS = True
+THREAD_POOLS = []
+CONFIGURED_THREAD_POOLS = set()
+
+DEFAULTS = {
+    "indices.total.docs.deleted",
+    "indices.total.fielddata.memory-size",
+    "indices.merges.total",
+    "cluster.number-of-nodes",
+    "process.open_file_descriptors",
+    "indices.total.merges.total",
+    "indices.total.store.size",
+    "thread_pool.generic.rejected",
+    "indices.segments.count",
+    "indices.merges.current",
+    "jvm.mem.heap-used",
+    "indices.search.query-time",
+    "cluster.number-of-data_nodes",
+    "cluster.active-shards",
+    "indices.indexing.index-total",
+    "indices.get.total",
+    "cluster.unassigned-shards",
+    "thread_pool.merge.rejected",
+    "indices.cache.field.size",
+    "thread_pool.search.rejected",
+    "jvm.gc.time",
+    "indices.store.size",
+    "thread_pool.get.rejected",
+    "indices.total.search.query-time",
+    "indices.search.query-total",
+    "indices.total.merges.total-time",
+    "cluster.active-primary-shards",
+    "indices.docs.deleted",
+    "thread_pool.refresh.rejected",
+    "indices.cache.filter.size",
+    "indices.total.search.query-total",
+    "thread_pool.flush.rejected",
+    "indices.docs.count",
+    "indices.total.indexing.index-time",
+    "indices.total.indexing.index-total",
+    "jvm.mem.heap-committed",
+    "indices.total.docs.count",
+    "cluster.relocating-shards",
+    "thread_pool.index.rejected",
+    "thread_pool.optimize.rejected",
+    "thread_pool.snapshot.rejected",
+    "jvm.uptime",
+    "indices.total.filter-cache.memory-size",
+    "thread_pool.bulk.rejected",
+    # ADD ADDITIONAL METRIC NAMES
+    # TO INCLUDE BY DEFAULT
+}
 
 # DICT: ElasticSearch 1.0.0
 NODE_STATS = {
@@ -231,6 +290,16 @@ NODE_STATS = {
     'process.mem.share_in_bytes':
         Stat("gauge", "nodes.%s.process.mem.share_in_bytes"),
 }
+
+# Deprecated node stats by first version in which they were removed
+DEPRECATED_NODE_STATS = [
+    {
+        'major': 2,
+        'minor': 0,
+        'revision': 0,
+        'keys': ['process.mem.share_in_bytes'],
+    },
+]
 
 NODE_STATS_ES_2 = {
     'indices.cache.filter.evictions':
@@ -506,6 +575,12 @@ CLUSTER_STATS = {
     'cluster.status': Stat("gauge", "status"),
 }
 
+# Thread pool metrics
+THREAD_POOL_METRICS = {
+    "gauge": ['threads', 'queue', 'active', 'largest'],
+    "counter": ['completed', 'rejected'],
+}
+
 
 # collectd callbacks
 def read_callback():
@@ -517,11 +592,28 @@ def read_callback():
     fetch_stats()
 
 
+def str_to_bool(value):
+    """Python 2.x does not have a casting mechanism for booleans.  The built in
+    bool() will return true for any string with a length greater than 0.  It
+    does not cast a string with the text "true" or "false" to the
+    corresponding bool value.  This method is a casting function.  It is
+    insensetive to case and leading/trailing spaces.  An Exception is raised
+    if a cast can not be made.
+    """
+    if str(value).strip().lower() == "true":
+        return True
+    elif str(value).strip().lower() == "false":
+        return False
+    else:
+        raise Exception("Unable to cast value (%s) to boolean" % value)
+
+
 def configure_callback(conf):
     """called by collectd to configure the plugin. This is called only once"""
     global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, VERBOSE_LOGGING, \
         ES_CLUSTER, ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
-        COLLECTION_INTERVAL, ES_USERNAME, ES_PASSWORD
+        DETAILED_METRICS, COLLECTION_INTERVAL, INDEX_INTERVAL, \
+        CONFIGURED_THREAD_POOLS, DEFAULTS, ES_USERNAME, ES_PASSWORD
 
     for node in conf.children:
         if node.key == 'Host':
@@ -533,7 +625,7 @@ def configure_callback(conf):
         elif node.key == 'Password':
             ES_PASSWORD = node.values[0]
         elif node.key == 'Verbose':
-            VERBOSE_LOGGING = bool(node.values[0])
+            VERBOSE_LOGGING = str_to_bool(node.values[0])
         elif node.key == 'Cluster':
             ES_CLUSTER = node.values[0]
             collectd.info(
@@ -545,14 +637,39 @@ def configure_callback(conf):
         elif node.key == 'Indexes':
             ES_INDEX = node.values
         elif node.key == 'EnableIndexStats':
-            ENABLE_INDEX_STATS = bool(node.values[0])
+            ENABLE_INDEX_STATS = str_to_bool(node.values[0])
         elif node.key == 'EnableClusterHealth':
-            ENABLE_CLUSTER_STATS = bool(node.values[0])
+            ENABLE_CLUSTER_STATS = str_to_bool(node.values[0])
         elif node.key == 'Interval':
             COLLECTION_INTERVAL = int(node.values[0])
+        elif node.key == 'IndexInterval':
+            INDEX_INTERVAL = int(node.values[0])
+        elif node.key == "DetailedMetrics":
+            DETAILED_METRICS = str_to_bool(node.values[0])
+        elif node.key == "ThreadPools":
+            for thread_pool in node.values:
+                CONFIGURED_THREAD_POOLS.add(thread_pool)
+            # Include required thread pools (search and index)
+            CONFIGURED_THREAD_POOLS.add('search')
+            CONFIGURED_THREAD_POOLS.add('index')
+        elif node.key == "AdditionalMetrics":
+            for metric_name in node.values:
+                DEFAULTS.add(metric_name)
+                log_verbose('Adding %s to the list of default metrics' %
+                            metric_name)
         else:
             collectd.warning('elasticsearch plugin: Unknown config key: %s.'
                              % node.key)
+
+    log_verbose("HOST: %s" % ES_HOST)
+    log_verbose("PORT: %s" % ES_PORT)
+    log_verbose("ES_INDEX: %s" % ES_INDEX)
+    log_verbose("ENABLE_INDEX_STATS: %s" % ENABLE_INDEX_STATS)
+    log_verbose("ENABLE_CLUSTER_STATS: %s" % ENABLE_CLUSTER_STATS)
+    log_verbose("COLLECTION_INTERVAL: %s" % COLLECTION_INTERVAL)
+    log_verbose('INDEX_INTERVAL: %s' % INDEX_INTERVAL)
+    log_verbose('DETAILED_METRICS: %s' % DETAILED_METRICS)
+    log_verbose('CONFIGURED_THREAD_POOLS: %s' % CONFIGURED_THREAD_POOLS)
 
     # determine node information
     load_es_info()
@@ -567,11 +684,69 @@ def configure_callback(conf):
         COLLECTION_INTERVAL)
 
 
+def sanatize_intervals():
+    """Sanatizes the index interval to be greater or equal to and divisible by
+    the colleciton interval
+    """
+    global INDEX_INTERVAL, COLLECTION_INTERVAL, INDEX_SKIP, SKIP_COUNT
+    # Sanitize the COLLECTION_INTERVAL and INDEX_INTERVAL
+    # ? INDEX_INTERVAL > COLLECTION_INTERVAL:
+    # check if INDEX_INTERVAL is divisible by COLLECTION_INTERVAL
+    if INDEX_INTERVAL > COLLECTION_INTERVAL:
+        # ? INDEX_INTERVAL % COLLECTION_INTERVAL > 0:
+        # round the INDEX_INTERVAL up to a compatible value
+        if INDEX_INTERVAL % COLLECTION_INTERVAL > 0:
+            INDEX_INTERVAL = INDEX_INTERVAL + COLLECTION_INTERVAL - \
+                              (INDEX_INTERVAL % COLLECTION_INTERVAL)
+            collectd.info("WARN: The Elasticsearch Index Interval must be \
+greater or equal to than and divisible by the collection Interval.  The \
+Elasticsearch Index Interval has been rounded to: %s" % INDEX_INTERVAL)
+
+    # ? INDEX_INTERVAL < COLLECTION_INTERVAL :
+    #   Set INDEX_INTERVAL = COLLECTION_INTERVAL
+    elif INDEX_INTERVAL < COLLECTION_INTERVAL:
+        INDEX_INTERVAL = COLLECTION_INTERVAL
+        collectd.info("WARN: The Elasticsearch Index Interval must be greater \
+or equal to than and divisible by the collection Interval.  The Elasticsearch \
+Index Interval has been rounded to: %s" % INDEX_INTERVAL)
+
+    # INDEX_SKIP = INDEX_INTERVAL / COLLECTION_INTERVAL
+    INDEX_SKIP = (INDEX_INTERVAL / COLLECTION_INTERVAL)
+
+    # ENSURE INDEX IS COLLECTED ON THE FIRST COLLECTION
+    SKIP_COUNT = INDEX_SKIP
+
+
+def remove_deprecated_node_stats():
+    """Remove deprecated node stats from the list of stats to collect"""
+    global DEPRECATED_NODE_STATS, ES_VERSION, NODE_STATS_CUR
+    # Attempt to parse the major, minor, and revision
+    (major, minor, revision) = ES_VERSION.split('.')
+
+    # Sanatize alphas and betas from revision number
+    revision = revision.split('-')[0]
+
+    # Iterate over deprecation lists and remove any keys that were deprecated
+    # prior to the current version
+    for dep in DEPRECATED_NODE_STATS:
+        if (major >= dep['major']) \
+            or (major == dep['major'] and minor >= dep['minor']) \
+            or (major == dep['major'] and minor == dep['minor'] and
+                revision >= dep['revision']):
+            for key in dep['keys']:
+                del NODE_STATS_CUR[key]
+
+
 # helper methods
 def init_stats():
     global ES_HOST, ES_PORT, ES_NODE_URL, ES_CLUSTER_URL, ES_INDEX_URL, \
         ES_VERSION, VERBOSE_LOGGING, NODE_STATS_CUR, INDEX_STATS_CUR, \
-        CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS
+        CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
+        INDEX_INTERVAL, INDEX_SKIP, COLLECTION_INTERVAL, SKIP_COUNT, \
+        DEPRECATED_NODE_STATS, THREAD_POOLS, CONFIGURED_THREAD_POOLS
+
+    sanatize_intervals()
+
     ES_NODE_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + \
                   "/_nodes/_local/stats/transport,http,process,jvm,indices," \
                   "thread_pool"
@@ -579,6 +754,8 @@ def init_stats():
     INDEX_STATS_CUR = dict(INDEX_STATS.items())
     if ES_VERSION.startswith("2."):
         NODE_STATS_CUR.update(NODE_STATS_ES_2)
+
+    remove_deprecated_node_stats()
 
     if ES_VERSION.startswith("1.1") or ES_VERSION.startswith("1.2"):
         INDEX_STATS_CUR.update(INDEX_STATS_ES_1_1)
@@ -595,25 +772,26 @@ def init_stats():
     else:
         ES_INDEX_URL = "http://" + ES_HOST + ":" + \
                        str(ES_PORT) + "/" + ",".join(ES_INDEX) + "/_stats"
+
     # common thread pools for all ES versions
     thread_pools = ['generic', 'index', 'get', 'snapshot', 'bulk', 'warmer',
                     'flush', 'search', 'refresh']
 
     if ES_VERSION.startswith("2."):
         thread_pools.extend(['suggest', 'percolate', 'management', 'listener',
-                             'force_merge', 'fetch_shard_store',
-                             'fetch_shard_started'])
+                             'fetch_shard_store', 'fetch_shard_started'])
+    elif ES_VERSION.startswith("2.") and not ES_VERSION.startswith("2.0"):
+        thread_pools.extend(['force_merge'])
     else:
         thread_pools.extend(['merge', 'optimize'])
 
-    # add info on thread pools (applicable for all versions)
-    for pool in thread_pools:
-        for attr in ['threads', 'queue', 'active', 'largest']:
-            path = 'thread_pool.{0}.{1}'.format(pool, attr)
-            NODE_STATS_CUR[path] = Stat("gauge", 'nodes.%s.{0}'.format(path))
-        for attr in ['completed', 'rejected']:
-            path = 'thread_pool.{0}.{1}'.format(pool, attr)
-            NODE_STATS_CUR[path] = Stat("counter", 'nodes.%s.{0}'.format(path))
+    # Legacy support for old configurations without Thread Pools configuration
+    if len(CONFIGURED_THREAD_POOLS) == 0:
+        THREAD_POOLS = list(CONFIGURED_THREAD_POOLS)
+    else:
+        # Filter out the thread pools that aren't specified by user
+        THREAD_POOLS = filter(lambda pool: pool in CONFIGURED_THREAD_POOLS,
+                              thread_pools)
 
     ES_CLUSTER_URL = "http://" + ES_HOST + \
                      ":" + str(ES_PORT) + "/_cluster/health"
@@ -640,13 +818,16 @@ def fetch_stats():
     fetches all required stats from ElasticSearch. This method also sets
     ES_CLUSTER
     """
-    global ES_CLUSTER
+    global ES_CLUSTER, SKIP_COUNT, INDEX_SKIP, THREAD_POOLS
 
     node_json_stats = fetch_url(ES_NODE_URL)
     if node_json_stats:
         ES_CLUSTER = node_json_stats['cluster_name']
         log_verbose('Configured with cluster_json_stats=%s' % ES_CLUSTER)
+        log_verbose('Parsing node_json_stats')
         parse_node_stats(node_json_stats, NODE_STATS_CUR)
+        log_verbose('Parsing thread pool stats')
+        parse_thread_pool_stats(node_json_stats, THREAD_POOLS)
 
     # load cluster and index stats only on master eligible nodes, this
     # avoids collecting too many metrics if the cluster has a lot of nodes
@@ -654,12 +835,16 @@ def fetch_stats():
         cluster_json_stats = fetch_url(ES_CLUSTER_URL)
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
-    if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE:
+    if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE and SKIP_COUNT >= INDEX_SKIP:
+        # Reset skip count
+        SKIP_COUNT = 0
         indices = fetch_url(ES_INDEX_URL)
         if indices:
             indexes_json_stats = indices['indices']
             for index_name in indexes_json_stats.keys():
                 parse_index_stats(indexes_json_stats[index_name], index_name)
+    # Incrememnt skip count
+    SKIP_COUNT += 1
 
 
 def fetch_url(url):
@@ -723,8 +908,30 @@ eligible: %s"
 def parse_node_stats(json, stats):
     """Parse node stats response from ElasticSearch"""
     for name, key in stats.iteritems():
-        result = lookup_node_stat(name, json)
-        dispatch_stat(result, name, key)
+        if DETAILED_METRICS is True or name in DEFAULTS:
+            result = lookup_node_stat(name, json)
+            dispatch_stat(result, name, key)
+
+
+def parse_thread_pool_stats(json, stats):
+    """Parse thread pool stats response from ElasticSearch"""
+    for pool in THREAD_POOLS:
+        for metric_type, value in THREAD_POOL_METRICS.iteritems():
+            for attr in value:
+                name = 'thread_pool.{0}.{1}'.format(pool, attr)
+                key = Stat(metric_type, 'nodes.%s.thread_pool.{0}.{1}'.
+                           format(pool, attr))
+                if DETAILED_METRICS is True or name in DEFAULTS:
+                    node = json['nodes'].keys()[0]
+                    result = dig_it_up(json, key.path % node)
+                    # Check to make sure we have a valid result
+                    # dig_it_up returns False if no match found
+                    if not isinstance(result, bool):
+                        result = int(result)
+                    else:
+                        result = None
+
+                    dispatch_stat(result, name, key)
 
 
 def parse_cluster_stats(json, stats):
@@ -732,18 +939,22 @@ def parse_cluster_stats(json, stats):
     # convert the status color into a number
     json['status'] = CLUSTER_STATUS[json['status']]
     for name, key in stats.iteritems():
-        result = dig_it_up(json, key.path)
-        dispatch_stat(result, name, key)
+        if DETAILED_METRICS is True or name in DEFAULTS:
+            result = dig_it_up(json, key.path)
+            dispatch_stat(result, name, key)
 
 
 def parse_index_stats(json, index_name):
     """Parse index stats response from ElasticSearch"""
     for name, key in INDEX_STATS_CUR.iteritems():
-        result = dig_it_up(json, key.path)
-        # update the index name in the type_instance to include
-        # the index as a dimensions
-        name = name.format(index_name=sanitize_type_instance(index_name))
-        dispatch_stat(result, name, key)
+        # filter default metrics
+        if DETAILED_METRICS is True or \
+           name.replace("[index={index_name}]", "") in DEFAULTS:
+            result = dig_it_up(json, key.path)
+            # update the index name in the type_instance to include
+            # the index as a dimensions
+            name = name.format(index_name=sanitize_type_instance(index_name))
+            dispatch_stat(result, name, key)
 
 
 def sanitize_type_instance(index_name):
@@ -757,7 +968,7 @@ def sanitize_type_instance(index_name):
     return ascii_index_name.replace('/', '_')
 
 
-def dispatch_stat(result, name, key):
+def dispatch_stat(result, name, key, dimensions=None):
     """Read a key from info response data and dispatch a value"""
     if result is None:
         collectd.warning('elasticsearch plugin: Value not found for %s' % name)
@@ -768,6 +979,13 @@ def dispatch_stat(result, name, key):
 
     val = collectd.Values(plugin='elasticsearch')
     val.plugin_instance = ES_CLUSTER
+
+    # If dimensions are provided, format them and append
+    # them to the plugin_instance
+    if dimensions:
+        val.plugin_instance += '[{dims}]'.format(dims=','.join(['='.join(d)
+                                                 for d in dimensions.items()]))
+
     val.type = estype
     val.type_instance = name
     val.values = [value]
