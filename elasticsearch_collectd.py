@@ -36,8 +36,6 @@ ES_CLUSTER_URL = ""
 ES_INDEX_URL = ""
 ES_INDEX = []
 
-VERBOSE_LOGGING = False
-
 Stat = collections.namedtuple('Stat', ('type', 'path'))
 
 NODE_STATS_CUR = {}
@@ -588,7 +586,7 @@ def read_callback():
     interval.
     If this method throws, the plugin will be skipped for an increasing amount
     of time until it returns normally again"""
-    log_verbose('Read callback called')
+    log.info('Read callback called')
     fetch_stats()
 
 
@@ -610,7 +608,7 @@ def str_to_bool(value):
 
 def configure_callback(conf):
     """called by collectd to configure the plugin. This is called only once"""
-    global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, VERBOSE_LOGGING, \
+    global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, \
         ES_CLUSTER, ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         DETAILED_METRICS, COLLECTION_INTERVAL, INDEX_INTERVAL, \
         CONFIGURED_THREAD_POOLS, DEFAULTS, ES_USERNAME, ES_PASSWORD
@@ -625,14 +623,14 @@ def configure_callback(conf):
         elif node.key == 'Password':
             ES_PASSWORD = node.values[0]
         elif node.key == 'Verbose':
-            VERBOSE_LOGGING = str_to_bool(node.values[0])
+            log.verbose = str_to_bool(node.values[0])
         elif node.key == 'Cluster':
             ES_CLUSTER = node.values[0]
-            collectd.info(
+            log.notice(
                 "overriding elasticsearch cluster name to %s" % ES_CLUSTER)
         elif node.key == 'Version':
             ES_VERSION = node.values[0]
-            collectd.info(
+            log.notice(
                 "overriding elasticsearch version number to %s" % ES_VERSION)
         elif node.key == 'Indexes':
             ES_INDEX = node.values
@@ -655,21 +653,19 @@ def configure_callback(conf):
         elif node.key == "AdditionalMetrics":
             for metric_name in node.values:
                 DEFAULTS.add(metric_name)
-                log_verbose('Adding %s to the list of default metrics' %
-                            metric_name)
         else:
-            collectd.warning('elasticsearch plugin: Unknown config key: %s.'
-                             % node.key)
+            log.warning('Unknown config key: %s.' % node.key)
 
-    log_verbose("HOST: %s" % ES_HOST)
-    log_verbose("PORT: %s" % ES_PORT)
-    log_verbose("ES_INDEX: %s" % ES_INDEX)
-    log_verbose("ENABLE_INDEX_STATS: %s" % ENABLE_INDEX_STATS)
-    log_verbose("ENABLE_CLUSTER_STATS: %s" % ENABLE_CLUSTER_STATS)
-    log_verbose("COLLECTION_INTERVAL: %s" % COLLECTION_INTERVAL)
-    log_verbose('INDEX_INTERVAL: %s' % INDEX_INTERVAL)
-    log_verbose('DETAILED_METRICS: %s' % DETAILED_METRICS)
-    log_verbose('CONFIGURED_THREAD_POOLS: %s' % CONFIGURED_THREAD_POOLS)
+    log.info("HOST: %s" % ES_HOST)
+    log.info("PORT: %s" % ES_PORT)
+    log.info("ES_INDEX: %s" % ES_INDEX)
+    log.info("ENABLE_INDEX_STATS: %s" % ENABLE_INDEX_STATS)
+    log.info("ENABLE_CLUSTER_STATS: %s" % ENABLE_CLUSTER_STATS)
+    log.info("COLLECTION_INTERVAL: %s" % COLLECTION_INTERVAL)
+    log.info('INDEX_INTERVAL: %s' % INDEX_INTERVAL)
+    log.info('DETAILED_METRICS: %s' % DETAILED_METRICS)
+    log.info('CONFIGURED_THREAD_POOLS: %s' % CONFIGURED_THREAD_POOLS)
+    log.info('METRICS TO COLLECT: %s' % DEFAULTS)
 
     # determine node information
     load_es_info()
@@ -679,7 +675,7 @@ def configure_callback(conf):
 
     # register the read callback now that we have the complete config
     collectd.register_read(read_callback, interval=COLLECTION_INTERVAL)
-    collectd.info(
+    log.notice(
         "started elasticsearch plugin with interval = %d seconds" %
         COLLECTION_INTERVAL)
 
@@ -698,7 +694,7 @@ def sanatize_intervals():
         if INDEX_INTERVAL % COLLECTION_INTERVAL > 0:
             INDEX_INTERVAL = INDEX_INTERVAL + COLLECTION_INTERVAL - \
                               (INDEX_INTERVAL % COLLECTION_INTERVAL)
-            collectd.info("WARN: The Elasticsearch Index Interval must be \
+            log.warning("The Elasticsearch Index Interval must be \
 greater or equal to than and divisible by the collection Interval.  The \
 Elasticsearch Index Interval has been rounded to: %s" % INDEX_INTERVAL)
 
@@ -706,7 +702,7 @@ Elasticsearch Index Interval has been rounded to: %s" % INDEX_INTERVAL)
     #   Set INDEX_INTERVAL = COLLECTION_INTERVAL
     elif INDEX_INTERVAL < COLLECTION_INTERVAL:
         INDEX_INTERVAL = COLLECTION_INTERVAL
-        collectd.info("WARN: The Elasticsearch Index Interval must be greater \
+        log.warning("WARN: The Elasticsearch Index Interval must be greater \
 or equal to than and divisible by the collection Interval.  The Elasticsearch \
 Index Interval has been rounded to: %s" % INDEX_INTERVAL)
 
@@ -740,7 +736,7 @@ def remove_deprecated_node_stats():
 # helper methods
 def init_stats():
     global ES_HOST, ES_PORT, ES_NODE_URL, ES_CLUSTER_URL, ES_INDEX_URL, \
-        ES_VERSION, VERBOSE_LOGGING, NODE_STATS_CUR, INDEX_STATS_CUR, \
+        ES_VERSION, NODE_STATS_CUR, INDEX_STATS_CUR, \
         CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         INDEX_INTERVAL, INDEX_SKIP, COLLECTION_INTERVAL, SKIP_COUNT, \
         DEPRECATED_NODE_STATS, THREAD_POOLS, CONFIGURED_THREAD_POOLS
@@ -796,8 +792,8 @@ def init_stats():
     ES_CLUSTER_URL = "http://" + ES_HOST + \
                      ":" + str(ES_PORT) + "/_cluster/health"
 
-    log_verbose('Configured with version=%s, host=%s, port=%s, url=%s' %
-                (ES_VERSION, ES_HOST, ES_PORT, ES_NODE_URL))
+    log.notice('Initialized with version=%s, host=%s, port=%s, url=%s' %
+               (ES_VERSION, ES_HOST, ES_PORT, ES_NODE_URL))
 
 
 # FUNCTION: Collect node stats from JSON result
@@ -823,16 +819,17 @@ def fetch_stats():
     node_json_stats = fetch_url(ES_NODE_URL)
     if node_json_stats:
         ES_CLUSTER = node_json_stats['cluster_name']
-        log_verbose('Configured with cluster_json_stats=%s' % ES_CLUSTER)
-        log_verbose('Parsing node_json_stats')
+        log.info('Configured with cluster_json_stats=%s' % ES_CLUSTER)
+        log.info('Parsing node_json_stats')
         parse_node_stats(node_json_stats, NODE_STATS_CUR)
-        log_verbose('Parsing thread pool stats')
+        log.info('Parsing thread pool stats')
         parse_thread_pool_stats(node_json_stats, THREAD_POOLS)
 
     # load cluster and index stats only on master eligible nodes, this
     # avoids collecting too many metrics if the cluster has a lot of nodes
     if ENABLE_CLUSTER_STATS and ES_MASTER_ELIGIBLE:
         cluster_json_stats = fetch_url(ES_CLUSTER_URL)
+        log.info("Parsing cluster stats")
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
     if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE and SKIP_COUNT >= INDEX_SKIP:
@@ -842,6 +839,7 @@ def fetch_stats():
         if indices:
             indexes_json_stats = indices['indices']
             for index_name in indexes_json_stats.keys():
+                log.info('Parsing index stats for index: %s' % index_name)
                 parse_index_stats(indexes_json_stats[index_name], index_name)
     # Incrememnt skip count
     SKIP_COUNT += 1
@@ -850,6 +848,7 @@ def fetch_stats():
 def fetch_url(url):
     response = None
     try:
+        log.info("Fetching api information from: %s" % url)
         request = urllib2.Request(url)
         if ES_USERNAME:
             authheader = base64.encodestring('%s:%s' %
@@ -857,11 +856,11 @@ def fetch_url(url):
                                              ).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % authheader)
         response = urllib2.urlopen(request, timeout=10)
+        log.info("Raw api response: %s" % response)
         return json.load(response)
     except (urllib2.URLError, urllib2.HTTPError), e:
-        collectd.error(
-            'elasticsearch plugin: Error connecting to %s - %r : %s' %
-            (url, e, e))
+        log.error('Error connecting to %s - %r : %s' %
+                  (url, e, e))
         return None
     finally:
         if response is not None:
@@ -878,9 +877,9 @@ def load_es_info():
         ES_VERSION = "1.0.0"
         ES_CLUSTER = "elasticsearch"
         ES_MASTER_ELIGIBLE = True
-        collectd.warning("elasticsearch plugin: unable to determine node \
+        log.warning("Unable to determine node \
 information, defaulting to version %s, cluster %s and master %s" %
-                         (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+                    (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
         return
 
     cluster_name = json['cluster_name']
@@ -900,9 +899,8 @@ information, defaulting to version %s, cluster %s and master %s" %
     if ES_CLUSTER is None:
         ES_CLUSTER = cluster_name
 
-    collectd.info("elasticsearch plugin: version: %s, cluster: %s, master \
-eligible: %s"
-                  % (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+    log.notice("version: %s, cluster: %s, master eligible: %s" %
+               (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
 
 
 def parse_node_stats(json, stats):
@@ -970,12 +968,17 @@ def sanitize_type_instance(index_name):
 
 def dispatch_stat(result, name, key, dimensions=None):
     """Read a key from info response data and dispatch a value"""
+    log.info(("Parameters to be emitted: \n name: {n} \n key: {k}"
+              "\n dimensions: {d} \n result: {r}").format(n=name,
+                                                          k=key,
+                                                          d=dimensions,
+                                                          r=result))
     if result is None:
-        collectd.warning('elasticsearch plugin: Value not found for %s' % name)
+        log.warning('Value not found for %s' % name)
         return
     estype = key.type
     value = int(result)
-    log_verbose('Sending value[%s]: %s=%s' % (estype, name, value))
+    log.info('Sending value[%s]: %s=%s' % (estype, name, value))
 
     val = collectd.Values(plugin='elasticsearch')
     val.plugin_instance = ES_CLUSTER
@@ -990,6 +993,7 @@ def dispatch_stat(result, name, key, dimensions=None):
     val.type_instance = name
     val.values = [value]
     val.meta = {'0': True}
+    log.info("Emitting value: %s" % val)
     val.dispatch()
 
 
@@ -1002,10 +1006,72 @@ def dig_it_up(obj, path):
         return False
 
 
-def log_verbose(msg):
-    if not VERBOSE_LOGGING:
-        return
-    collectd.info('elasticsearch plugin [verbose]: %s' % msg)
+class Log:
+    """Logging utility for logging information about the operation of this
+    plugin.  This class honors a 'verbose' flag.  When verbose is false,
+    log.info and log.debug statements will be ignored."""
+
+    def __init__(self, plugin="unknown", verbose=False):
+        self.verbose = verbose
+        self.plugin = plugin
+
+    def debug(self, message=None):
+        """Logs debug level messages if verbose is true
+        @param message : str
+        """
+        try:
+            if self.verbose is True and message is not None:
+                collectd.debug("%s : %s" % (self.plugin, message))
+        except Exception as e:
+            self._log_error(e)
+
+    def info(self, message=None):
+        """Logs debug level messages if verbose is true
+        @param message: str
+        """
+        try:
+            if self.verbose is True and message is not None:
+                collectd.info("%s : %s" % (self.plugin, message))
+        except Exception as e:
+            self._log_error(e)
+
+    def notice(self, message=None):
+        """Logs notice level messages
+        @param message: str
+        """
+        try:
+            if message is not None:
+                collectd.notice("%s : %s" % (self.plugin, message))
+        except Exception as e:
+            self._log_error(e)
+
+    def warning(self, message=None):
+        """Logs notice level messages
+        @param message: str
+        """
+        try:
+            if message is not None:
+                collectd.warning("%s : %s" % (self.plugin, message))
+        except Exception as e:
+            self._log_eror(e)
+
+    def error(self, message=None):
+        """Logs error level messages
+        @param message: str
+        """
+        try:
+            if message is not None:
+                collectd.error("%s : %s" % (self.plugin, message))
+        except Exception as e:
+            self._log_error(e)
+
+    def _log_error(self, error=""):
+        """
+        Log's an error when logging another statement fails
+        @param error: str
+        """
+        collectd.error("%s [ERROR]: Failed to write log statement due to: %s"
+                       % (self.plugin, error))
 
 
 # The following classes are there to launch the plugin manually
@@ -1016,8 +1082,14 @@ class CollectdMock(object):
     def __init__(self):
         self.value_mock = CollectdValuesMock
 
+    def debug(self, msg):
+        print 'DEBUG: {}'.format(msg)
+
     def info(self, msg):
         print 'INFO: {}'.format(msg)
+
+    def notice(self, msg):
+        print 'NOTICE: {}'.format(msg)
 
     def warning(self, msg):
         print 'WARN: {}'.format(msg)
@@ -1047,10 +1119,12 @@ if __name__ == '__main__':
     # allow user to override ES host name for easier testing
     if len(sys.argv) > 1:
         ES_HOST = sys.argv[1]
+    log = Log("elasticsearch")
     collectd = CollectdMock()
     load_es_info()
     init_stats()
     fetch_stats()
 else:
     import collectd
+    log = Log("elasticsearch")
     collectd.register_config(configure_callback)
