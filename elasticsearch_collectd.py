@@ -18,6 +18,7 @@ import collections
 import json
 import urllib2
 import base64
+import logging
 
 PREFIX = "elasticsearch"
 ES_HOST = "localhost"
@@ -623,15 +624,15 @@ def configure_callback(conf):
         elif node.key == 'Password':
             ES_PASSWORD = node.values[0]
         elif node.key == 'Verbose':
-            log.verbose = str_to_bool(node.values[0])
+            handle.verbose = str_to_bool(node.values[0])
         elif node.key == 'Cluster':
             ES_CLUSTER = node.values[0]
             log.notice(
-                "overriding elasticsearch cluster name to %s" % ES_CLUSTER)
+                'overriding elasticsearch cluster name to %s' % ES_CLUSTER)
         elif node.key == 'Version':
             ES_VERSION = node.values[0]
             log.notice(
-                "overriding elasticsearch version number to %s" % ES_VERSION)
+                'overriding elasticsearch version number to %s' % ES_VERSION)
         elif node.key == 'Indexes':
             ES_INDEX = node.values
         elif node.key == 'EnableIndexStats':
@@ -656,12 +657,12 @@ def configure_callback(conf):
         else:
             log.warning('Unknown config key: %s.' % node.key)
 
-    log.info("HOST: %s" % ES_HOST)
-    log.info("PORT: %s" % ES_PORT)
-    log.info("ES_INDEX: %s" % ES_INDEX)
-    log.info("ENABLE_INDEX_STATS: %s" % ENABLE_INDEX_STATS)
-    log.info("ENABLE_CLUSTER_STATS: %s" % ENABLE_CLUSTER_STATS)
-    log.info("COLLECTION_INTERVAL: %s" % COLLECTION_INTERVAL)
+    log.info('HOST: %s' % ES_HOST)
+    log.info('PORT: %s' % ES_PORT)
+    log.info('ES_INDEX: %s' % ES_INDEX)
+    log.info('ENABLE_INDEX_STATS: %s' % ENABLE_INDEX_STATS)
+    log.info('ENABLE_CLUSTER_STATS: %s' % ENABLE_CLUSTER_STATS)
+    log.info('COLLECTION_INTERVAL: %s' % COLLECTION_INTERVAL)
     log.info('INDEX_INTERVAL: %s' % INDEX_INTERVAL)
     log.info('DETAILED_METRICS: %s' % DETAILED_METRICS)
     log.info('CONFIGURED_THREAD_POOLS: %s' % CONFIGURED_THREAD_POOLS)
@@ -676,7 +677,7 @@ def configure_callback(conf):
     # register the read callback now that we have the complete config
     collectd.register_read(read_callback, interval=COLLECTION_INTERVAL)
     log.notice(
-        "started elasticsearch plugin with interval = %d seconds" %
+        'started elasticsearch plugin with interval = %d seconds' %
         COLLECTION_INTERVAL)
 
 
@@ -694,17 +695,17 @@ def sanatize_intervals():
         if INDEX_INTERVAL % COLLECTION_INTERVAL > 0:
             INDEX_INTERVAL = INDEX_INTERVAL + COLLECTION_INTERVAL - \
                               (INDEX_INTERVAL % COLLECTION_INTERVAL)
-            log.warning("The Elasticsearch Index Interval must be \
+            log.warning('The Elasticsearch Index Interval must be \
 greater or equal to than and divisible by the collection Interval.  The \
-Elasticsearch Index Interval has been rounded to: %s" % INDEX_INTERVAL)
+Elasticsearch Index Interval has been rounded to: %s' % INDEX_INTERVAL)
 
     # ? INDEX_INTERVAL < COLLECTION_INTERVAL :
     #   Set INDEX_INTERVAL = COLLECTION_INTERVAL
     elif INDEX_INTERVAL < COLLECTION_INTERVAL:
         INDEX_INTERVAL = COLLECTION_INTERVAL
-        log.warning("WARN: The Elasticsearch Index Interval must be greater \
+        log.warning('WARN: The Elasticsearch Index Interval must be greater \
 or equal to than and divisible by the collection Interval.  The Elasticsearch \
-Index Interval has been rounded to: %s" % INDEX_INTERVAL)
+Index Interval has been rounded to: %s' % INDEX_INTERVAL)
 
     # INDEX_SKIP = INDEX_INTERVAL / COLLECTION_INTERVAL
     INDEX_SKIP = (INDEX_INTERVAL / COLLECTION_INTERVAL)
@@ -829,7 +830,7 @@ def fetch_stats():
     # avoids collecting too many metrics if the cluster has a lot of nodes
     if ENABLE_CLUSTER_STATS and ES_MASTER_ELIGIBLE:
         cluster_json_stats = fetch_url(ES_CLUSTER_URL)
-        log.info("Parsing cluster stats")
+        log.info('Parsing cluster stats')
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
     if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE and SKIP_COUNT >= INDEX_SKIP:
@@ -848,7 +849,7 @@ def fetch_stats():
 def fetch_url(url):
     response = None
     try:
-        log.info("Fetching api information from: %s" % url)
+        log.info('Fetching api information from: %s' % url)
         request = urllib2.Request(url)
         if ES_USERNAME:
             authheader = base64.encodestring('%s:%s' %
@@ -856,7 +857,7 @@ def fetch_url(url):
                                              ).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % authheader)
         response = urllib2.urlopen(request, timeout=10)
-        log.info("Raw api response: %s" % response)
+        log.info('Raw api response: %s' % response)
         return json.load(response)
     except (urllib2.URLError, urllib2.HTTPError), e:
         log.error('Error connecting to %s - %r : %s' %
@@ -877,8 +878,8 @@ def load_es_info():
         ES_VERSION = "1.0.0"
         ES_CLUSTER = "elasticsearch"
         ES_MASTER_ELIGIBLE = True
-        log.warning("Unable to determine node \
-information, defaulting to version %s, cluster %s and master %s" %
+        log.warning('Unable to determine node \
+information, defaulting to version %s, cluster %s and master %s' %
                     (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
         return
 
@@ -899,7 +900,7 @@ information, defaulting to version %s, cluster %s and master %s" %
     if ES_CLUSTER is None:
         ES_CLUSTER = cluster_name
 
-    log.notice("version: %s, cluster: %s, master eligible: %s" %
+    log.notice('version: %s, cluster: %s, master eligible: %s' %
                (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
 
 
@@ -968,11 +969,11 @@ def sanitize_type_instance(index_name):
 
 def dispatch_stat(result, name, key, dimensions=None):
     """Read a key from info response data and dispatch a value"""
-    log.info(("Parameters to be emitted: \n name: {n} \n key: {k}"
-              "\n dimensions: {d} \n result: {r}").format(n=name,
-                                                          k=key,
-                                                          d=dimensions,
-                                                          r=result))
+    log.info(('Parameters to be emitted:\n name: {n}\n key: {k}'
+              '\n dimensions: {d}\n result: {r}').format(n=name,
+                                                         k=key,
+                                                         d=dimensions,
+                                                         r=result))
     if result is None:
         log.warning('Value not found for %s' % name)
         return
@@ -993,7 +994,7 @@ def dispatch_stat(result, name, key, dimensions=None):
     val.type_instance = name
     val.values = [value]
     val.meta = {'0': True}
-    log.info("Emitting value: %s" % val)
+    log.info('Emitting value: %s' % val)
     val.dispatch()
 
 
@@ -1004,74 +1005,6 @@ def dig_it_up(obj, path):
         return reduce(lambda x, y: x[y], path, obj)
     except:
         return False
-
-
-class Log:
-    """Logging utility for logging information about the operation of this
-    plugin.  This class honors a 'verbose' flag.  When verbose is false,
-    log.info and log.debug statements will be ignored."""
-
-    def __init__(self, plugin="unknown", verbose=False):
-        self.verbose = verbose
-        self.plugin = plugin
-
-    def debug(self, message=None):
-        """Logs debug level messages if verbose is true
-        @param message : str
-        """
-        try:
-            if self.verbose is True and message is not None:
-                collectd.debug("%s : %s" % (self.plugin, message))
-        except Exception as e:
-            self._log_error(e)
-
-    def info(self, message=None):
-        """Logs debug level messages if verbose is true
-        @param message: str
-        """
-        try:
-            if self.verbose is True and message is not None:
-                collectd.info("%s : %s" % (self.plugin, message))
-        except Exception as e:
-            self._log_error(e)
-
-    def notice(self, message=None):
-        """Logs notice level messages
-        @param message: str
-        """
-        try:
-            if message is not None:
-                collectd.notice("%s : %s" % (self.plugin, message))
-        except Exception as e:
-            self._log_error(e)
-
-    def warning(self, message=None):
-        """Logs notice level messages
-        @param message: str
-        """
-        try:
-            if message is not None:
-                collectd.warning("%s : %s" % (self.plugin, message))
-        except Exception as e:
-            self._log_eror(e)
-
-    def error(self, message=None):
-        """Logs error level messages
-        @param message: str
-        """
-        try:
-            if message is not None:
-                collectd.error("%s : %s" % (self.plugin, message))
-        except Exception as e:
-            self._log_error(e)
-
-    def _log_error(self, error=""):
-        """
-        Log's an error when logging another statement fails
-        @param error: str
-        """
-        collectd.error("%s [ERROR]: Failed to write log statement due to: %s"
-                       % (self.plugin, error))
 
 
 # The following classes are there to launch the plugin manually
@@ -1114,17 +1047,101 @@ class CollectdValuesMock(object):
         return "<CollectdValues {}>".format(' '.join(attrs))
 
 
+class CollectdLogHandler(logging.Handler):
+    """Log handler to forward statements to collectd
+    A custom log handler that forwards log messages raised
+    at level debug, info, notice, warning, and error
+    to collectd's built in logging.  Suppresses extraneous
+    info and debug statements using a "verbose" boolean
+
+    Inherits from logging.Handler
+
+    Arguments
+        plugin -- name of the plugin (default 'unknown')
+        verbose -- enable/disable verbose messages (default False)
+    """
+    def __init__(self, plugin="unknown", verbose=False):
+        """Initializes CollectdLogHandler
+        Arguments
+            plugin -- string name of the plugin (default 'unknown')
+            verbose -- enable/disable verbose messages (default False)
+        """
+        self.verbose = verbose
+        self.plugin = plugin
+        logging.Handler.__init__(self, level=logging.NOTSET)
+
+    def emit(self, record):
+        """
+        Emits a log record to the appropraite collectd log function
+
+        Arguments
+        record -- str log record to be emitted
+        """
+        try:
+            if record.msg is not None:
+                if record.levelname == 'ERROR':
+                    collectd.error('%s : %s' % (self.plugin, record.msg))
+                elif record.levelname == 'WARNING':
+                    collectd.warning('%s : %s' % (self.plugin, record.msg))
+                elif record.levelname == 'NOTICE':
+                    collectd.notice('%s : %s' % (self.plugin, record.msg))
+                elif record.levelname == 'INFO' and self.verbose is True:
+                    collectd.info('%s : %s' % (self.plugin, record.msg))
+                elif record.levelname == 'DEBUG' and self.verbose is True:
+                    collectd.debug('%s : %s' % (self.plugin, record.msg))
+        except Exception as e:
+            collectd.warning(('{p} [ERROR]: Failed to write log statement due '
+                              'to: {e}').format(p=self.plugin,
+                                                e=e
+                                                ))
+
+
+class CollectdLogger(logging.Logger):
+    """Logs all collectd log levels via python's logging library
+    Custom python logger that forwards log statements at
+    level: debug, info, notice, warning, error
+
+    Inherits from logging.Logger
+
+    Arguments
+    name -- name of the logger
+    level -- log level to filter by
+    """
+    def __init__(self, name, level=logging.NOTSET):
+        """Initializes CollectdLogger
+
+        Arguments
+        name -- name of the logger
+        level -- log level to filter by
+        """
+        logging.Logger.__init__(self, name, level)
+        logging.addLevelName(25, 'NOTICE')
+
+    def notice(self, msg):
+        """Logs a 'NOTICE' level statement at level 25
+
+        Arguments
+        msg - log statement to be logged as 'NOTICE'
+        """
+        self.log(25, msg)
+
+
+# Set up logging
+logging.setLoggerClass(CollectdLogger)
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+handle = CollectdLogHandler(PREFIX)
+log.addHandler(handle)
+
 if __name__ == '__main__':
     import sys
     # allow user to override ES host name for easier testing
     if len(sys.argv) > 1:
         ES_HOST = sys.argv[1]
-    log = Log("elasticsearch")
     collectd = CollectdMock()
     load_es_info()
     init_stats()
     fetch_stats()
 else:
     import collectd
-    log = Log("elasticsearch")
     collectd.register_config(configure_callback)
