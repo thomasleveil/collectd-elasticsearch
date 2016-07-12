@@ -1133,12 +1133,32 @@ log.setLevel(logging.DEBUG)
 handle = CollectdLogHandler(PREFIX)
 log.addHandler(handle)
 
+
+def configure_test():
+    """Configure the plugin for testing"""
+    global CONFIGURED_THREAD_POOLS, DETAILED_METRICS, INDEX_INTERVAL, \
+        ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, ES_MASTER_ELIGIBLE
+
+    # Ensure all possible threadpools are elligible for collection
+    CONFIGURED_THREAD_POOLS = set(['generic', 'index', 'get', 'snapshot',
+                                   'bulk', 'warmer', 'flush', 'search',
+                                   'refresh', 'suggest', 'percolate',
+                                   'management', 'listener',
+                                   'fetch_shard_store', 'fetch_shard_started',
+                                   'force_merge', 'merge', 'optimize'])
+    DETAILED_METRICS = True
+    INDEX_INTERVAL = 10
+    ENABLE_INDEX_STATS = True
+    ENABLE_CLUSTER_STATS = True
+    ES_MASTER_ELIGIBLE = True
+
 if __name__ == '__main__':
     import sys
     # allow user to override ES host name for easier testing
     if len(sys.argv) > 1:
         ES_HOST = sys.argv[1]
     collectd = CollectdMock()
+    configure_test()
     load_es_info()
     init_stats()
     fetch_stats()
