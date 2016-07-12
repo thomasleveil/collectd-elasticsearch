@@ -3,9 +3,9 @@
 This file documents important changes to the Elasticsearch plugin for collectd. 
 
 - [2016-06-28: Basic configuration
-changes](#101---2016-06-02-support-for-signalflow-api) 
+changes](#2016-06-28-changes-to-basic-plugin-configuration) 
 - [2016-06-27: Support for basic 
-authentication](#101---2016-06-02-support-for-signalflow-api)
+authentication](#2016-06-27-support-for-basic-authentication)
 
 #### 2016-06-28: Changes to basic plugin configuration
 
