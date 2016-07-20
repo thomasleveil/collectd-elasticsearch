@@ -2,10 +2,35 @@
 
 This file documents important changes to the Elasticsearch plugin for collectd. 
 
+- [2016-07-21: Dimensionalize thread pool metrics
+by thread pool](#2016-07-21-dimensionalize-thread-pool-metrics-by-thread-pool)
 - [2016-06-28: Basic configuration
 changes](#2016-06-28-changes-to-basic-plugin-configuration) 
 - [2016-06-27: Support for basic 
 authentication](#2016-06-27-support-for-basic-authentication)
+
+#### 2016-07-21: Dimensionalize thread pool metrics by thread pool
+
+Prior to this update, the plugin transmitted thread pool metrics with the names
+of thread pools as part of the name.
+
+Ex. (Where thread_pool is "search")
+```
+counter.thread_pool.search.rejected
+```
+
+This update removes the name of the thread pool from the metric name and 
+attaches attaches the thread pool as a dimension named "thread_pool". 
+
+Ex. (Where thread_pool is "search")
+```Bash
+counter.thread_pool.rejected
+# The metric above now has the dimension 
+# named "thread_pool" set to "search"
+```
+
+*Custom dashboards and detectors will need to be updated to monitor 
+based on the new metric names.*
 
 #### 2016-06-28: Changes to basic plugin configuration
 
