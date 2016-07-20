@@ -1130,6 +1130,7 @@ class CollectdLogger(logging.Logger):
 logging.setLoggerClass(CollectdLogger)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+log.propagate = False
 handle = CollectdLogHandler(PREFIX)
 log.addHandler(handle)
 
