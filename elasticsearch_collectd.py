@@ -58,6 +58,8 @@ THREAD_POOLS = []
 CONFIGURED_THREAD_POOLS = set()
 
 DEFAULTS = {
+    # AUTOMATICALLY GENERATED METRIC NAMES
+    # TO INCLUDE BY DEFAULT
     "indices.total.docs.deleted",
     "indices.total.fielddata.memory-size",
     "indices.merges.total",
@@ -65,7 +67,6 @@ DEFAULTS = {
     "process.open_file_descriptors",
     "indices.total.merges.total",
     "indices.total.store.size",
-    "thread_pool.generic.rejected",
     "indices.segments.count",
     "indices.merges.current",
     "jvm.mem.heap-used",
@@ -75,9 +76,7 @@ DEFAULTS = {
     "indices.indexing.index-total",
     "indices.get.total",
     "cluster.unassigned-shards",
-    "thread_pool.merge.rejected",
     "indices.cache.field.size",
-    "thread_pool.search.rejected",
     "jvm.gc.time",
     "indices.store.size",
     "thread_pool.get.rejected",
@@ -86,25 +85,27 @@ DEFAULTS = {
     "indices.total.merges.total-time",
     "cluster.active-primary-shards",
     "indices.docs.deleted",
-    "thread_pool.refresh.rejected",
     "indices.cache.filter.size",
     "indices.total.search.query-total",
-    "thread_pool.flush.rejected",
     "indices.docs.count",
     "indices.total.indexing.index-time",
     "indices.total.indexing.index-total",
     "jvm.mem.heap-committed",
     "indices.total.docs.count",
     "cluster.relocating-shards",
-    "thread_pool.index.rejected",
-    "thread_pool.optimize.rejected",
-    "thread_pool.snapshot.rejected",
+    "thread_pool.rejected",
     "jvm.uptime",
     "indices.total.filter-cache.memory-size",
-    "thread_pool.bulk.rejected",
+}
+
+DEFAULTS.update({
     # ADD ADDITIONAL METRIC NAMES
     # TO INCLUDE BY DEFAULT
-}
+    "cluster.status",
+    "indicies.indexing.index-time",
+    "indices.merges.time"
+    "indicies.store.throttle-time",
+})
 
 # DICT: ElasticSearch 1.0.0
 NODE_STATS = {
@@ -917,7 +918,7 @@ def parse_thread_pool_stats(json, stats):
     for pool in THREAD_POOLS:
         for metric_type, value in THREAD_POOL_METRICS.iteritems():
             for attr in value:
-                name = 'thread_pool.{0}.{1}'.format(pool, attr)
+                name = 'thread_pool.{0}'.format(attr)
                 key = Stat(metric_type, 'nodes.%s.thread_pool.{0}.{1}'.
                            format(pool, attr))
                 if DETAILED_METRICS is True or name in DEFAULTS:
@@ -930,7 +931,7 @@ def parse_thread_pool_stats(json, stats):
                     else:
                         result = None
 
-                    dispatch_stat(result, name, key)
+                    dispatch_stat(result, name, key, {'thread_pool': pool})
 
 
 def parse_cluster_stats(json, stats):
@@ -1152,6 +1153,7 @@ def configure_test():
     ENABLE_INDEX_STATS = True
     ENABLE_CLUSTER_STATS = True
     ES_MASTER_ELIGIBLE = True
+
 
 if __name__ == '__main__':
     import sys

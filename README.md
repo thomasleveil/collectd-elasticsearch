@@ -38,7 +38,7 @@ A [CollectD](http://collectd.org) plugin to collect [Elasticsearch](https://gith
  * Get (total, time, exists total, exists time, missing total, missing time)
  * Search (total query, total time, total fetch, total fetch time)
  * JVM uptime
- * JVM memory (heap commited, heap Used, non heap commited, non heap used)
+ * JVM memory (heap committed, heap Used, non heap committed, non heap used)
  * JVM threads (count & peak)
  * JVM GC (time & count)
  * Transport stats (server open, RX count, RX size, TX count, TX size)

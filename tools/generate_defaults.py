@@ -22,6 +22,8 @@ def process_json_minimal(conf):
     """
     d = set()
     DEFAULTS = "DEFAULTS = {\n"
+    DEFAULTS += "    # AUTOMATICALLY GENERATED METRIC NAMES\n"
+    DEFAULTS += "    # TO INCLUDE BY DEFAULT\n"
     # Iterate over each file passed in
     for file in conf:
         # Iterate each element in the first level array
@@ -43,8 +45,6 @@ def process_json_minimal(conf):
                                     d.add(metric[metric.find('.')+1:])
     for elem in d:
         DEFAULTS += '    "' + elem + '",\n'
-    DEFAULTS += '    # ADD ADDITIONAL METRIC NAMES\n'
-    DEFAULTS += '    # TO INCLUDE BY DEFAULT\n'
     DEFAULTS += '}\n'
     return DEFAULTS
 
