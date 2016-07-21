@@ -12,7 +12,7 @@ authentication](#2016-06-27-support-for-basic-authentication)
 #### 2016-07-21: Dimensionalize thread pool metrics by thread pool
 
 Prior to this update, the plugin transmitted thread pool metrics with the names
-of thread pools as part of the name.
+of thread pools included as part of the metric name.
 
 Ex. (Where thread_pool is "search")
 ```
@@ -20,7 +20,7 @@ counter.thread_pool.search.rejected
 ```
 
 This update removes the name of the thread pool from the metric name and 
-attaches attaches the thread pool as a dimension named "thread_pool". 
+instead attaches the name of the thread pool in a dimension named "thread_pool". 
 
 Ex. (Where thread_pool is "search")
 ```Bash
@@ -29,8 +29,23 @@ counter.thread_pool.rejected
 # named "thread_pool" set to "search"
 ```
 
-*Custom dashboards and detectors will need to be updated to monitor 
-based on the new metric names.*
+SignalFx's built-in dashboards have been updated to accommodate metrics from
+both before and after this change. 
+
+When you upgrade to this version, any custom SignalFx charts and detectors that
+you have built that include thread pool metrics will need to be modified to
+include the new metric names. Modify charts as follows: 
+
+1. Whenever a chart uses a metric like `counter.thread_pool.search.rejected`,
+add a new plot to the chart that uses the metric `counter.thread_pool.rejected`.
+1. On the new plot, apply a filter by the dimension `thread_pool`, with value
+`search`, to match the previous metric. 
+1. If your chart uses a timeseries expression that refers to the previous
+metric, clone the expression, then modify any letter references in the clone to
+refer to the new plot instead of the old one. 
+
+For detectors, follow the procedure above, then select the new plot or new
+timeseries expression as the signal. 
 
 #### 2016-06-28: Changes to basic plugin configuration
 
