@@ -102,9 +102,9 @@ DEFAULTS.update({
     # ADD ADDITIONAL METRIC NAMES
     # TO INCLUDE BY DEFAULT
     "cluster.status",
-    "indicies.indexing.index-time",
+    "indices.indexing.index-time",
     "indices.merges.time"
-    "indicies.store.throttle-time",
+    "indices.store.throttle-time",
 })
 
 # DICT: ElasticSearch 1.0.0
