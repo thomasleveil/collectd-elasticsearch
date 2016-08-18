@@ -820,8 +820,10 @@ def fetch_stats():
 
     node_json_stats = fetch_url(ES_NODE_URL)
     if node_json_stats:
-        ES_CLUSTER = node_json_stats['cluster_name']
-        log.info('Configured with cluster_json_stats=%s' % ES_CLUSTER)
+        if ES_CLUSTER is None:
+            ES_CLUSTER = node_json_stats['cluster_name']
+        else:
+            log.info('Configured with cluster_json_stats=%s' % ES_CLUSTER)
         log.info('Parsing node_json_stats')
         parse_node_stats(node_json_stats, NODE_STATS_CUR)
         log.info('Parsing thread pool stats')
@@ -876,8 +878,10 @@ def load_es_info():
                      "/_nodes/_local")
     if json is None:
         # assume some sane defaults
-        ES_VERSION = "1.0.0"
-        ES_CLUSTER = "elasticsearch"
+        if ES_VERSION is None:
+            ES_VERSION = "1.0.0"
+        if ES_CLUSTER is None:
+            ES_CLUSTER = "elasticsearch"
         ES_MASTER_ELIGIBLE = True
         log.warning('Unable to determine node \
 information, defaulting to version %s, cluster %s and master %s' %
