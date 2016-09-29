@@ -57,6 +57,9 @@ DETAILED_METRICS = True
 THREAD_POOLS = []
 CONFIGURED_THREAD_POOLS = set()
 
+ES_CURRENT_MASTER = False
+MASTER_ONLY = False
+
 DEFAULTS = set([
     # AUTOMATICALLY GENERATED METRIC NAMES
     # TO INCLUDE BY DEFAULT
@@ -613,7 +616,8 @@ def configure_callback(conf):
     global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, \
         ES_CLUSTER, ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         DETAILED_METRICS, COLLECTION_INTERVAL, INDEX_INTERVAL, \
-        CONFIGURED_THREAD_POOLS, DEFAULTS, ES_USERNAME, ES_PASSWORD
+        CONFIGURED_THREAD_POOLS, DEFAULTS, ES_USERNAME, ES_PASSWORD, \
+        MASTER_ONLY
 
     for node in conf.children:
         if node.key == 'Host':
@@ -655,6 +659,8 @@ def configure_callback(conf):
         elif node.key == "AdditionalMetrics":
             for metric_name in node.values:
                 DEFAULTS.add(metric_name)
+        elif node.key == "IndexStatsMasterOnly":
+            MASTER_ONLY = str_to_bool(node.values[0])
         else:
             log.warning('Unknown config key: %s.' % node.key)
 
@@ -668,6 +674,7 @@ def configure_callback(conf):
     log.info('DETAILED_METRICS: %s' % DETAILED_METRICS)
     log.info('CONFIGURED_THREAD_POOLS: %s' % CONFIGURED_THREAD_POOLS)
     log.info('METRICS TO COLLECT: %s' % DEFAULTS)
+    log.info('MASTER_ONLY: %s' % MASTER_ONLY)
 
     # determine node information
     load_es_info()
@@ -829,6 +836,9 @@ def fetch_stats():
         log.info('Parsing thread pool stats')
         parse_thread_pool_stats(node_json_stats, THREAD_POOLS)
 
+    # check the current master
+    detect_es_master()
+
     # load cluster and index stats only on master eligible nodes, this
     # avoids collecting too many metrics if the cluster has a lot of nodes
     if ENABLE_CLUSTER_STATS and ES_MASTER_ELIGIBLE:
@@ -836,7 +846,7 @@ def fetch_stats():
         log.info('Parsing cluster stats')
         parse_cluster_stats(cluster_json_stats, CLUSTER_STATS)
 
-    if ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE and SKIP_COUNT >= INDEX_SKIP:
+    if (ENABLE_INDEX_STATS and ES_MASTER_ELIGIBLE and SKIP_COUNT >= INDEX_SKIP) and ((MASTER_ONLY and ES_CURRENT_MASTER) or (not MASTER_ONLY )):
         # Reset skip count
         SKIP_COUNT = 0
         indices = fetch_url(ES_INDEX_URL)
@@ -907,6 +917,26 @@ information, defaulting to version %s, cluster %s and master %s' %
 
     log.notice('version: %s, cluster: %s, master eligible: %s' %
                (ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE))
+
+
+def detect_es_master():
+    """Determines if this is the current master. This method sets ES_CURRENT_MASTER"""
+    global ES_CURRENT_MASTER
+
+    json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) +
+                     "/_nodes/_local")
+    if json is None:
+        ES_CURRENT_MASTER = False
+        log.warning('Unable to determine node \
+information, defaulting to current master %s' % ES_CURRENT_MASTER)
+        return
+
+    # determine current master and update globel setting
+    cluster_state = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) +
+                            "/_cluster/state/master_node")
+    ES_CURRENT_MASTER = cluster_state['master_node'] == json['nodes'].keys()[0]
+
+    log.notice('current master: %s' % ES_CURRENT_MASTER)
 
 
 def parse_node_stats(json, stats):
