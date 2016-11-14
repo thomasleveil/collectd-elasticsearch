@@ -26,7 +26,7 @@ mkdir -p $DIR/_cluster/state
 mkdir -p $DIR/_nodes/_local/stats
 
 # sleep for a couple of seconds to ensure ES is up
-sleep 10
+sleep 30
 curl -s http://${ES_HOST}
 
 # populate elasticsearch with some dummy data to generate more interesting numbers
