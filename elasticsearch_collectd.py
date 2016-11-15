@@ -303,6 +303,28 @@ DEPRECATED_NODE_STATS = [
         'revision': 0,
         'keys': ['process.mem.share_in_bytes'],
     },
+    {
+        'major': 5,
+        'minor': 0,
+        'revision': 0,
+        'keys': ['indices.segments.index-writer-max-size']
+    }
+]
+
+# Deprecated thread pools by first version in which they were removed
+DEPRECATED_THREAD_POOLS = [
+    {
+        'major': 2,
+        'minor': 0,
+        'revision': 0,
+        'keys': ['merge', 'optimize']
+    },
+    {
+        'major': 5,
+        'minor': 0,
+        'revision': 0,
+        'keys': ['suggest', 'percolate']
+    }
 ]
 
 NODE_STATS_ES_2 = {
@@ -726,21 +748,43 @@ Index Interval has been rounded to: %s' % INDEX_INTERVAL)
 def remove_deprecated_node_stats():
     """Remove deprecated node stats from the list of stats to collect"""
     global DEPRECATED_NODE_STATS, ES_VERSION, NODE_STATS_CUR
+    NODE_STATS_CUR = remove_deprecated_elements(DEPRECATED_NODE_STATS,
+                                                NODE_STATS_CUR,
+                                                ES_VERSION)
+
+
+def remove_deprecated_threads():
+    """Remove deprecated thread_pools from the list of stats to collect"""
+    global DEPRECATED_THREAD_POOLS, ES_VERSION, THREAD_POOLS
+    THREAD_POOLS = remove_deprecated_elements(DEPRECATED_THREAD_POOLS,
+                                              THREAD_POOLS,
+                                              ES_VERSION)
+
+
+def remove_deprecated_elements(deprecated, elements, version):
+    """Remove deprecated items from a list or dictionary"""
     # Attempt to parse the major, minor, and revision
-    (major, minor, revision) = ES_VERSION.split('.')
+    (major, minor, revision) = version.split('.')
 
     # Sanatize alphas and betas from revision number
     revision = revision.split('-')[0]
 
     # Iterate over deprecation lists and remove any keys that were deprecated
     # prior to the current version
-    for dep in DEPRECATED_NODE_STATS:
+    for dep in deprecated:
         if (major >= dep['major']) \
             or (major == dep['major'] and minor >= dep['minor']) \
             or (major == dep['major'] and minor == dep['minor'] and
                 revision >= dep['revision']):
-            for key in dep['keys']:
-                del NODE_STATS_CUR[key]
+            if type(elements) is list:
+                for key in dep['keys']:
+                    if key in elements:
+                        elements.remove(key)
+            if type(elements) is dict:
+                for key in dep['keys']:
+                    if key in elements:
+                        del elements[key]
+    return elements
 
 
 # helper methods
@@ -758,7 +802,7 @@ def init_stats():
                   "thread_pool"
     NODE_STATS_CUR = dict(NODE_STATS.items())
     INDEX_STATS_CUR = dict(INDEX_STATS.items())
-    if ES_VERSION.startswith("2."):
+    if not ES_VERSION.startswith("1."):
         NODE_STATS_CUR.update(NODE_STATS_ES_2)
 
     remove_deprecated_node_stats()
@@ -783,13 +827,18 @@ def init_stats():
     thread_pools = ['generic', 'index', 'get', 'snapshot', 'bulk', 'warmer',
                     'flush', 'search', 'refresh']
 
-    if ES_VERSION.startswith("2."):
+    # Add the 1.0 metrics
+    if not ES_VERSION.startswith("0."):
+        thread_pools.extend(['merge', 'optimize'])
+
+    # Add the 2.0 metrics
+    if not ES_VERSION.startswith("1."):
         thread_pools.extend(['suggest', 'percolate', 'management', 'listener',
                              'fetch_shard_store', 'fetch_shard_started'])
-    elif ES_VERSION.startswith("2.") and not ES_VERSION.startswith("2.0"):
+
+    # Add the 2.1 metrics
+    if not ES_VERSION.startswith("1.") and not ES_VERSION.startswith("2.0"):
         thread_pools.extend(['force_merge'])
-    else:
-        thread_pools.extend(['merge', 'optimize'])
 
     # Legacy support for old configurations without Thread Pools configuration
     if len(CONFIGURED_THREAD_POOLS) == 0:
@@ -798,6 +847,8 @@ def init_stats():
         # Filter out the thread pools that aren't specified by user
         THREAD_POOLS = filter(lambda pool: pool in CONFIGURED_THREAD_POOLS,
                               thread_pools)
+
+    remove_deprecated_threads()
 
     ES_CLUSTER_URL = "http://" + ES_HOST + \
                      ":" + str(ES_PORT) + "/_cluster/health"
@@ -1199,6 +1250,7 @@ if __name__ == '__main__':
     # allow user to override ES host name for easier testing
     if len(sys.argv) > 1:
         ES_HOST = sys.argv[1]
+    handle.verbose = True
     collectd = CollectdMock()
     configure_test()
     load_es_info()
