@@ -938,7 +938,7 @@ def fetch_url(url):
             request.add_header("Authorization", "Basic %s" % authheader)
         ctx = None
         if ES_URL_SCHEME == "https":
-          ctx = ssl._create_unverified_context()
+            ctx = ssl._create_unverified_context()
         response = urllib2.urlopen(request, context=ctx, timeout=10)
         log.info('Raw api response: %s' % response)
         return json.load(response)
