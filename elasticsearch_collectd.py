@@ -19,10 +19,12 @@ import json
 import urllib2
 import base64
 import logging
+import ssl
 
 PREFIX = "elasticsearch"
 ES_HOST = "localhost"
 ES_PORT = 9200
+ES_URL_SCHEME = "http"
 ES_CLUSTER = None
 ES_USERNAME = ""
 ES_PASSWORD = ""
@@ -642,7 +644,7 @@ def str_to_bool(value):
 
 def configure_callback(conf):
     """called by collectd to configure the plugin. This is called only once"""
-    global ES_HOST, ES_PORT, ES_NODE_URL, ES_VERSION, \
+    global ES_HOST, ES_PORT, ES_NODE_URL, ES_URL_SCHEME, ES_VERSION, \
         ES_CLUSTER, ES_INDEX, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         DETAILED_METRICS, COLLECTION_INTERVAL, INDEX_INTERVAL, \
         CONFIGURED_THREAD_POOLS, DEFAULTS, ES_USERNAME, ES_PASSWORD, \
@@ -653,6 +655,10 @@ def configure_callback(conf):
             ES_HOST = node.values[0]
         elif node.key == 'Port':
             ES_PORT = int(node.values[0])
+        elif node.key == 'Protocol':
+            ES_URL_SCHEME = node.values[0]
+            log.notice(
+                'overriding elasticsearch url scheme to %s' % ES_URL_SCHEME)
         elif node.key == 'Username':
             ES_USERNAME = node.values[0]
         elif node.key == 'Password':
@@ -795,7 +801,7 @@ def remove_deprecated_elements(deprecated, elements, version):
 
 # helper methods
 def init_stats():
-    global ES_HOST, ES_PORT, ES_NODE_URL, ES_CLUSTER_URL, ES_INDEX_URL, \
+    global ES_HOST, ES_PORT, ES_NODE_URL, ES_URL_SCHEME, ES_CLUSTER_URL, ES_INDEX_URL, \
         ES_VERSION, NODE_STATS_CUR, INDEX_STATS_CUR, \
         CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         INDEX_INTERVAL, INDEX_SKIP, COLLECTION_INTERVAL, SKIP_COUNT, \
@@ -803,7 +809,7 @@ def init_stats():
 
     sanatize_intervals()
 
-    ES_NODE_URL = "http://" + ES_HOST + ":" + str(ES_PORT) + \
+    ES_NODE_URL = ES_URL_SCHEME + "://" + ES_HOST + ":" + str(ES_PORT) + \
                   "/_nodes/_local/stats/transport,http,process,jvm,indices," \
                   "thread_pool"
     NODE_STATS_CUR = dict(NODE_STATS.items())
@@ -823,10 +829,10 @@ def init_stats():
     # version agnostic settings
     if not ES_INDEX:
         # get all index stats
-        ES_INDEX_URL = "http://" + ES_HOST + \
+        ES_INDEX_URL = ES_URL_SCHEME + "://" + ES_HOST + \
                        ":" + str(ES_PORT) + "/_all/_stats"
     else:
-        ES_INDEX_URL = "http://" + ES_HOST + ":" + \
+        ES_INDEX_URL = ES_URL_SCHEME + "://" + ES_HOST + ":" + \
                        str(ES_PORT) + "/" + ",".join(ES_INDEX) + "/_stats"
 
     # common thread pools for all ES versions
@@ -856,7 +862,7 @@ def init_stats():
 
     remove_deprecated_threads()
 
-    ES_CLUSTER_URL = "http://" + ES_HOST + \
+    ES_CLUSTER_URL = ES_URL_SCHEME + "://" + ES_HOST + \
                      ":" + str(ES_PORT) + "/_cluster/health"
 
     log.notice('Initialized with version=%s, host=%s, port=%s, url=%s' %
@@ -930,7 +936,10 @@ def fetch_url(url):
                                              (ES_USERNAME, ES_PASSWORD)
                                              ).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % authheader)
-        response = urllib2.urlopen(request, timeout=10)
+        ctx = None
+        if ES_URL_SCHEME == "https":
+            ctx = ssl._create_unverified_context()
+        response = urllib2.urlopen(request, context=ctx, timeout=10)
         log.info('Raw api response: %s' % response)
         return json.load(response)
     except (urllib2.URLError, urllib2.HTTPError), e:
@@ -945,7 +954,7 @@ def fetch_url(url):
 def load_es_info():
     global ES_VERSION, ES_CLUSTER, ES_MASTER_ELIGIBLE, NODE_ID
 
-    json = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) +
+    json = fetch_url(ES_URL_SCHEME + "://" + ES_HOST + ":" + str(ES_PORT) +
                      "/_nodes/_local")
     if json is None:
         # assume some sane defaults
@@ -989,7 +998,7 @@ def detect_es_master():
     ES_CURRENT_MASTER"""
     global ES_CURRENT_MASTER
     # determine current master
-    cluster_state = fetch_url("http://" + ES_HOST + ":" + str(ES_PORT) +
+    cluster_state = fetch_url(ES_URL_SCHEME + "://" + ES_HOST + ":" + str(ES_PORT) +
                               "/_cluster/state/master_node")
     if ES_CURRENT_MASTER is False and cluster_state['master_node'] == NODE_ID:
         ES_CURRENT_MASTER = True
