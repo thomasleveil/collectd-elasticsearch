@@ -435,7 +435,7 @@ INDEX_STATS = {
     "indices[index={index_name}].primaries.merges.current-size":
         Stat("gauge", "primaries.merges.current_size_in_bytes"),
 
-    # COMPELTION
+    # COMPLETION
     "indices[index={index_name}].primaries.completion.size":
         Stat("gauge", "primaries.completion.size_in_bytes"),
 
@@ -632,7 +632,7 @@ def str_to_bool(value):
     bool() will return true for any string with a length greater than 0.  It
     does not cast a string with the text "true" or "false" to the
     corresponding bool value.  This method is a casting function.  It is
-    insensetive to case and leading/trailing spaces.  An Exception is raised
+    insensitive to case and leading/trailing spaces.  An Exception is raised
     if a cast can not be made.
     """
     if str(value).strip().lower() == "true":
@@ -718,7 +718,7 @@ def configure_callback(conf):
     # determine node information
     load_es_info()
 
-    # intialize stats map based on ES version
+    # initialize stats map based on ES version
     init_stats()
 
     # register the read callback now that we have the complete config
@@ -728,9 +728,9 @@ def configure_callback(conf):
         COLLECTION_INTERVAL)
 
 
-def sanatize_intervals():
-    """Sanatizes the index interval to be greater or equal to and divisible by
-    the colleciton interval
+def sanitize_intervals():
+    """Sanitizes the index interval to be greater or equal to and divisible by
+    the collection interval
     """
     global INDEX_INTERVAL, COLLECTION_INTERVAL, INDEX_SKIP, SKIP_COUNT
     # Sanitize the COLLECTION_INTERVAL and INDEX_INTERVAL
@@ -782,7 +782,7 @@ def remove_deprecated_elements(deprecated, elements, version):
     # Attempt to parse the major, minor, and revision
     (major, minor, revision) = version.split('.')
 
-    # Sanatize alphas and betas from revision number
+    # Sanitize alphas and betas from revision number
     revision = revision.split('-')[0]
 
     # Iterate over deprecation lists and remove any keys that were deprecated
@@ -805,17 +805,16 @@ def remove_deprecated_elements(deprecated, elements, version):
 
 # helper methods
 def init_stats():
-    global ES_HOST, ES_PORT, ES_NODE_URL, ES_URL_SCHEME, ES_CLUSTER_URL, ES_INDEX_URL, \
-        ES_VERSION, NODE_STATS_CUR, INDEX_STATS_CUR, \
+    global ES_HOST, ES_PORT, ES_NODE_URL, ES_URL_SCHEME, ES_CLUSTER_URL, \
+        ES_INDEX_URL, ES_VERSION, NODE_STATS_CUR, INDEX_STATS_CUR, \
         CLUSTER_STATS_CUR, ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, \
         INDEX_INTERVAL, INDEX_SKIP, COLLECTION_INTERVAL, SKIP_COUNT, \
         DEPRECATED_NODE_STATS, THREAD_POOLS, CONFIGURED_THREAD_POOLS
 
-    sanatize_intervals()
+    sanitize_intervals()
 
     ES_NODE_URL = ES_URL_SCHEME + "://" + ES_HOST + ":" + str(ES_PORT) + \
-                  "/_nodes/_local/stats/transport,http,process,jvm,indices," \
-                  "thread_pool"
+        "/_nodes/_local/stats/transport,http,process,jvm,indices,thread_pool"
     NODE_STATS_CUR = dict(NODE_STATS.items())
     INDEX_STATS_CUR = dict(INDEX_STATS.items())
     if not ES_VERSION.startswith("1."):
@@ -867,7 +866,7 @@ def init_stats():
     remove_deprecated_threads()
 
     ES_CLUSTER_URL = ES_URL_SCHEME + "://" + ES_HOST + \
-                     ":" + str(ES_PORT) + "/_cluster/health"
+        ":" + str(ES_PORT) + "/_cluster/health"
 
     log.notice('Initialized with version=%s, host=%s, port=%s, url=%s' %
                (ES_VERSION, ES_HOST, ES_PORT, ES_NODE_URL))
@@ -926,11 +925,12 @@ def fetch_stats():
                 log.info('Parsing index stats for _all summary')
                 parse_index_stats(indices['_all'], '_all')
             else:
-	        indexes_json_stats = indices['indices']
+                indexes_json_stats = indices['indices']
                 for index_name in indexes_json_stats.keys():
                     log.info('Parsing index stats for index: %s' % index_name)
-                    parse_index_stats(indexes_json_stats[index_name], index_name)
-    # Incrememnt skip count
+                    parse_index_stats(indexes_json_stats[index_name],
+                                      index_name)
+    # Increment skip count
     SKIP_COUNT += 1
 
 
@@ -1006,8 +1006,8 @@ def detect_es_master():
     ES_CURRENT_MASTER"""
     global ES_CURRENT_MASTER
     # determine current master
-    cluster_state = fetch_url(ES_URL_SCHEME + "://" + ES_HOST + ":" + str(ES_PORT) +
-                              "/_cluster/state/master_node")
+    cluster_state = fetch_url(ES_URL_SCHEME + "://" + ES_HOST + ":"
+                              + str(ES_PORT) + "/_cluster/state/master_node")
     if ES_CURRENT_MASTER is False and cluster_state['master_node'] == NODE_ID:
         ES_CURRENT_MASTER = True
         log.notice('current master: %s' % ES_CURRENT_MASTER)
@@ -1186,7 +1186,7 @@ class CollectdLogHandler(logging.Handler):
 
     def emit(self, record):
         """
-        Emits a log record to the appropraite collectd log function
+        Emits a log record to the appropriate collectd log function
 
         Arguments
         record -- str log record to be emitted
@@ -1254,7 +1254,7 @@ def configure_test():
     global CONFIGURED_THREAD_POOLS, DETAILED_METRICS, INDEX_INTERVAL, \
         ENABLE_INDEX_STATS, ENABLE_CLUSTER_STATS, ES_MASTER_ELIGIBLE
 
-    # Ensure all possible threadpools are elligible for collection
+    # Ensure all possible threadpools are eligible for collection
     CONFIGURED_THREAD_POOLS = set(['generic', 'index', 'get', 'snapshot',
                                    'bulk', 'warmer', 'flush', 'search',
                                    'refresh', 'suggest', 'percolate',
